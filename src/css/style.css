@@ -115,3 +115,47 @@ footer {
   color: #e67e22; /* laranja */
   font-size: 1.1rem;
 }
+
+#localizacao {
+  padding: 40px 20px;
+  background-color: #f9f9f9;
+  text-align: center;
+}
+
+#localizacao h2 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.mapa-container {
+  max-width: 900px;
+  margin: 0 auto;
+  box-shadow: 0 0 12px rgba(0,0,0,0.1);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.botao-whats {
+  display: inline-flex;
+  align-items: center;
+  background-color: #25D366;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 16px;
+  margin-top: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.botao-whats img {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+}
+
+.botao-whats:hover {
+  background-color: #1ebe5d;
+}
