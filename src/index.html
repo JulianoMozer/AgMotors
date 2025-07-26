@@ -29,71 +29,90 @@
     <!-- Seções com IDs que batem com o menu -->
     <section id="estoque">
       <h2>Estoque</h2>
-      <!-- Aqui você vai inserir os cards dos carros -->
-       <div class="cards-container">
-    <div class="card-carro">
-      <img src="img/onix-hatch/IMG-20250724-WA0008.jpg" alt="Chevrolet Onix LT 2023" />
-      <div class="card-info">
-        <h3>Chevrolet Onix LT 1.0 12V</h3>
-        <p>Ano: 2023</p>
-        <p>Motor: 1.0 12V</p>
-        <p class="preco">R$ 68.900,00</p>
+      <div class="cards-container">
+        <div class="card-carro">
+          <img src="img/onix-hatch/IMG-20250724-WA0008.jpg" alt="Chevrolet Onix LT 2023" />
+          <div class="card-info">
+            <h3>Chevrolet Onix LT 1.0 12V</h3>
+            <p>Ano: 2023</p>
+            <p>Motor: 1.0 12V</p>
+            <p class="preco">R$ 68.900,00</p>
+          </div>
+        </div>
+        <div class="card-carro">
+          <img src="img/ecosport2005/IMG-20250717-WA0153.jpg" alt="Ecosport 2005 foto canto dianteiro esquerdo" />
+          <div class="card-info">
+            <h3>Ford Ecosport XLS 1.6</h3>
+            <p>Ano: 2005</p>
+            <p>Motor: 1.6 8V</p>
+            <p class="preco">R$ 22.900,00</p>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="card-carro">
-      <img src="img/ecosport2005/IMG-20250717-WA0153.jpg" alt="Ecosport 2005 foto canto dianteiro esquerdo" />
-      <div class="card-info">
-        <h3>Ford Ecosport XLS 1.6</h3>
-        <p>Ano: 2005</p>
-        <p>Motor: 1.6 8V</p>
-        <p class="preco">R$ 22.900,00</p>
-      </div>
-    </div>
     </section>
 
-    <section id="financiamentos">
+    <section id="financiamentos" class="section-styled">
       <h2>Financiamentos</h2>
       <p>Oferecemos as melhores taxas do mercado. Consulte condições.</p>
     </section>
 
-    <section id="vender">
+    <section id="vender" class="section-styled">
       <h2>Quer Vender Seu Carro?</h2>
       <p>Compramos seu veículo à vista ou aceitamos na troca. Envie os dados para avaliação!</p>
+
+      <form action="https://formsubmit.co/mozerlogistica@gmail.com" method="POST">
+        <div class="form-group">
+          <input type="text" id="nome" name="nome" placeholder="Seu nome" required>
+          <input type="text" id="telefone" name="telefone" placeholder="WhatsApp" required>
+          <textarea id="dados" name="dados_do_carro" placeholder="Marca, modelo, ano, KM, estado geral..." required></textarea>
+        </div>
+
+        <!-- Proteções e redirecionamento -->
+        <input type="hidden" name="_captcha" value="false">
+        <input type="hidden" name="_next" value="https://www.agmotorscuritiba.com.br/obrigado.html">
+
+        <button type="submit" class="btn-enviar" onclick="return enviarWhatsApp()">Enviar</button>
+      </form>
     </section>
 
-<section id="contato">
-  <h2>Contato</h2>
-  <p>Fale conosco pelo WhatsApp ou visite nossa loja!</p>
-  <ul>
-    <li>📞 Fixo: (41) 3343-8697</li>
-    <li>
-      <a class="botao-whats" href="https://wa.me/5541996155327" target="_blank">
-        <img src="img/WhatsApp.svg.png" alt="WhatsApp" />
-        (41) 99615-5327
-      </a>
-    </li>
-  </ul>
-</section>
-    <section id="localizacao">
-  <h2>Onde Estamos</h2>
-  <div class="mapa-container">
-    <iframe
-      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3601.557807234168!2d-49.33793252385578!3d-25.48643693512857!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94dce3002cd42a79%3A0x94c2c48baf93a270!2sAG%20Motors%20Multimarcas!5e0!3m2!1spt-BR!2sbr!4v1753473627300!5m2!1spt-BR!2sbr"
-      width="100%"
-      height="400"
-      style="border:0;"
-      allowfullscreen=""
-      loading="lazy"
-      referrerpolicy="no-referrer-when-downgrade">
-    </iframe>
-  </div>
-</section>
+    <section id="contato" class="section-styled">
+      <h2>Contato</h2>
+      <p>Fale conosco pelo WhatsApp ou visite nossa loja!</p>
+      <ul>
+        <li>📞 Fixo: (41) 3343-8697</li>
+        <li>
+          <a class="botao-whats" href="https://wa.me/5541996155327" target="_blank">
+            <img src="img/WhatsApp.svg.png" alt="WhatsApp" />
+            (41) 99615-5327
+          </a>
+        </li>
+      </ul>
+    </section>
 
+    <section id="localizacao">
+      <h2>Onde Estamos</h2>
+      <div class="mapa-container">
+        <iframe
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3601.557807234168!2d-49.33793252385578!3d-25.48643693512857!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94dce3002cd42a79%3A0x94c2c48baf93a270!2sAG%20Motors%20Multimarcas!5e0!3m2!1spt-BR!2sbr!4v1753473627300!5m2!1spt-BR!2sbr"
+          width="100%"
+          height="400"
+          style="border:0;"
+          allowfullscreen=""
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+      </div>
+    </section>
   </main>
 
-  <footer>
-    <p>&copy; 2025 AG MOTORS - agmotorscuritiba.com.br</p>
-  </footer>
+ <footer>
+  <p>&copy; 2025 AG MOTORS - agmotorscuritiba.com.br | <span class="dev-by">Desenvolvido por Juliano Mozer</span></p>
+</footer>
+  <div class="social-icons">
+  <a href="https://wa.me/5541996155327" target="_blank"><img src="img/vecteezy_whatsapp-logo-png-icon_16716480.png" alt="WhatsApp" /></a>
+  <a href="https://www.instagram.com/agmotorscuritiba/" target="_blank"><img src="img/vecteezy_instagram-png-icon_16716448.png" alt="Instagram" /></a>
+  <a href="https://www.facebook.com/marketplace/profile/100003661356301/" target="_blank"><img src="img/vecteezy_facebook-png-icon_16716481.png" alt="Facebook" /></a>
+</div>
+  <script src="js/script.js"></script>
 </body>
 </html>
-<script src="js/script.js"></script>
