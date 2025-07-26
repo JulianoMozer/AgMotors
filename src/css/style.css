@@ -269,13 +269,21 @@ footer {
     flex-direction: column;
     text-align: center;
   }
+
+  .logo {
+    margin-right: 0;
+    margin-bottom: 1rem;
+  }
+
   .menu ul {
     flex-direction: column;
     gap: 0.5rem;
   }
+
   .cards-container {
     grid-template-columns: 1fr;
   }
+
   main {
     padding: 1rem;
   }
