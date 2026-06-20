@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#0b1220">
+  <title>Painel administrativo | AG Motors</title>
+  <link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-page">
+  <main>
+    <section class="admin-login" id="login-view">
+      <div class="login-card">
+        <a class="brand" href="index.html"><span class="brand-mark">AG</span><span><strong>AG Motors</strong><small>Administração</small></span></a>
+        <div><span class="eyebrow">Acesso restrito</span><h1>Gerencie seu estoque</h1><p>Entre com a conta administrativa configurada no Supabase.</p></div>
+        <div class="admin-alert" id="config-alert" hidden>O Supabase ainda não foi configurado. Preencha <code>src/js/config.js</code> para ativar o painel.</div>
+        <form id="login-form"><label>E-mail<input id="login-email" type="email" autocomplete="username" required></label><label>Senha<input id="login-password" type="password" autocomplete="current-password" required></label><button class="button button-primary button-full" type="submit">Entrar</button><p class="form-message" id="login-message" role="alert"></p></form>
+        <a class="back-site" href="index.html">← Voltar para o site</a>
+      </div>
+    </section>
+
+    <section class="admin-shell" id="admin-view" hidden>
+      <aside class="admin-sidebar"><a class="brand brand-footer" href="index.html"><span class="brand-mark">AG</span><span><strong>AG Motors</strong><small>Painel</small></span></a><nav><button class="active" type="button" data-view="inventory">Estoque</button><a href="index.html" target="_blank" rel="noopener">Ver site</a></nav><button class="logout-button" id="logout-button" type="button">Sair</button></aside>
+      <div class="admin-content">
+        <header class="admin-header"><div><span class="eyebrow">Administração</span><h1>Estoque de veículos</h1></div><button class="button button-primary" id="new-vehicle" type="button">+ Cadastrar veículo</button></header>
+        <div class="dashboard-cards"><article><span>Total</span><strong id="stat-total">0</strong></article><article><span>Disponíveis</span><strong id="stat-available">0</strong></article><article><span>Reservados</span><strong id="stat-reserved">0</strong></article><article><span>Vendidos</span><strong id="stat-sold">0</strong></article></div>
+        <div class="admin-toolbar"><input id="admin-search" type="search" placeholder="Buscar por marca ou modelo"><select id="admin-status"><option value="">Todos os status</option><option value="available">Disponível</option><option value="reserved">Reservado</option><option value="sold">Vendido</option></select></div>
+        <div class="admin-table-wrap"><table><thead><tr><th>Veículo</th><th>Ano</th><th>Preço</th><th>Status</th><th>Destaque</th><th><span class="sr-only">Ações</span></th></tr></thead><tbody id="admin-list"></tbody></table><div class="admin-empty" id="admin-empty" hidden>Nenhum veículo encontrado.</div></div>
+      </div>
+    </section>
+  </main>
+
+  <dialog class="admin-modal" id="vehicle-form-modal"><div class="admin-modal-header"><div><span class="eyebrow">Estoque</span><h2 id="form-title">Cadastrar veículo</h2></div><button type="button" class="admin-modal-close" aria-label="Fechar">×</button></div><form id="vehicle-form"><input id="vehicle-id" type="hidden"><div class="admin-form-grid"><label>Marca<input id="admin-brand" required></label><label>Modelo e versão<input id="admin-model" required></label><label>Ano de fabricação<input id="admin-year" type="number" min="1900" max="2100" required></label><label>Ano do modelo<input id="admin-model-year" type="number" min="1900" max="2100" required></label><label>Preço (R$)<input id="admin-price" type="number" min="0" step="100" required></label><label>Quilometragem<input id="admin-mileage" type="number" min="0" step="1"></label><label>Câmbio<input id="admin-transmission" placeholder="Manual ou automático"></label><label>Combustível<input id="admin-fuel" placeholder="Flex, gasolina..."></label><label>Cor<input id="admin-color"></label><label>Status<select id="admin-form-status"><option value="available">Disponível</option><option value="reserved">Reservado</option><option value="sold">Vendido</option></select></label></div><label>Descrição<textarea id="admin-description" rows="3"></textarea></label><label>Opcionais <small>Um por linha</small><textarea id="admin-features" rows="4"></textarea></label><label>Fotos <small>JPG, PNG ou WebP. A primeira será a capa.</small><input id="admin-images" type="file" accept="image/jpeg,image/png,image/webp" multiple></label><div class="existing-images" id="existing-images"></div><label class="admin-check"><input id="admin-featured" type="checkbox"> Exibir como destaque</label><p class="form-message" id="vehicle-message" role="alert"></p><div class="form-actions"><button class="button button-ghost admin-modal-close" type="button">Cancelar</button><button class="button button-primary" type="submit">Salvar veículo</button></div></form></dialog>
+  <dialog class="confirm-modal" id="delete-modal"><h2>Excluir veículo?</h2><p>Esta ação remove o veículo do banco. Se preferir manter o histórico, marque-o como vendido.</p><div class="form-actions"><button class="button button-ghost" id="cancel-delete" type="button">Cancelar</button><button class="button danger-button" id="confirm-delete" type="button">Excluir</button></div></dialog>
+  <div class="toast" id="admin-toast" role="status" aria-live="polite"></div>
+  <script type="module" src="js/admin.js"></script>
+</body></html>

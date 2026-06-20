@@ -1,0 +1,40 @@
+export const fallbackVehicles = [
+  {
+    id: "onix-lt-2023",
+    slug: "chevrolet-onix-lt-2023",
+    brand: "Chevrolet",
+    model: "Onix LT 1.0 12V",
+    year: 2023,
+    modelYear: 2023,
+    price: 68900,
+    mileage: null,
+    transmission: "Manual",
+    fuel: "Flex",
+    color: "Azul",
+    status: "available",
+    featured: true,
+    description: "Hatch moderno, econômico e pronto para acompanhar sua rotina.",
+    features: ["Ar-condicionado", "Direção elétrica", "Vidros elétricos", "Central multimídia"],
+    cover: "img/onix-hatch/IMG-20250724-WA0008.jpg",
+    images: ["img/onix-hatch/IMG-20250724-WA0008.jpg", "img/onix-hatch/IMG-20250724-WA0007.jpg", "img/onix-hatch/IMG-20250724-WA0009.jpg", "img/onix-hatch/IMG-20250724-WA0010.jpg"]
+  },
+  {
+    id: "ecosport-xls-2005",
+    slug: "ford-ecosport-xls-2005",
+    brand: "Ford",
+    model: "EcoSport XLS 1.6 8V",
+    year: 2005,
+    modelYear: 2005,
+    price: 22900,
+    mileage: null,
+    transmission: "Manual",
+    fuel: "Flex",
+    color: "Prata",
+    status: "available",
+    featured: false,
+    description: "SUV versátil com posição elevada de dirigir e ótimo espaço interno.",
+    features: ["Ar-condicionado", "Direção hidráulica", "Vidros elétricos", "Rack de teto"],
+    cover: "img/ecosport2005/IMG-20250717-WA0153.jpg",
+    images: ["img/ecosport2005/IMG-20250717-WA0153.jpg", "img/ecosport2005/IMG-20250717-WA0150.jpg", "img/ecosport2005/IMG-20250717-WA0148.jpg", "img/ecosport2005/IMG-20250717-WA0146.jpg"]
+  }
+];

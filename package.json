@@ -1,14 +1,15 @@
 {
   "name": "agmotors",
   "version": "1.0.0",
-  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "gulp build",
+    "dev": "gulp dev",
+    "check": "node --check src/js/script.js && node --check src/js/admin.js && node --check src/js/supabase-client.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Site institucional, estoque e painel administrativo da AG Motors Curitiba.",
   "devDependencies": {
     "gulp": "^5.0.1",
     "gulp-imagemin": "^9.1.0"
