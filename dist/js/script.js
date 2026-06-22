@@ -5,6 +5,16 @@ const $ = (selector, scope = document) => scope.querySelector(selector);
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const number = new Intl.NumberFormat("pt-BR");
 let vehicles = [];
+const whatsappNumber = "5541996155327";
+const whatsappUrl = message => `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+const generalWhatsAppMessage = "Olá, vim pelo site da AG Motors e gostaria de atendimento.";
+const vehicleWhatsAppMessage = vehicle => `Olá, tenho interesse no ${vehicle.brand} ${vehicle.model} anunciado no site da AG Motors.`;
+
+function initializeWhatsAppLinks() {
+  document.querySelectorAll(`a[href^="https://wa.me/${whatsappNumber}"]`).forEach(link => {
+    if (!new URL(link.href).searchParams.has("text")) link.href = whatsappUrl(generalWhatsAppMessage);
+  });
+}
 
 function escapeHTML(value = "") {
   return String(value).replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
@@ -34,7 +44,7 @@ function vehicleCard(vehicle) {
     <div class="vehicle-body"><div class="vehicle-title"><small>${escapeHTML(vehicle.brand)}</small><h3>${escapeHTML(vehicle.model)}</h3></div>
     <div class="vehicle-price"><span>Preço à vista</span><strong>${money.format(vehicle.price)}</strong></div>
     <ul class="vehicle-specs"><li><span>Ano</span><strong>${vehicle.year}/${vehicle.modelYear || vehicle.year}</strong></li><li><span>Km</span><strong>${vehicle.mileage ? number.format(vehicle.mileage) : "Consulte"}</strong></li><li><span>Câmbio</span><strong>${escapeHTML(vehicle.transmission || "Consulte")}</strong></li></ul>
-    <button class="card-link" type="button" data-vehicle="${escapeHTML(vehicle.id)}"><span>Conhecer este veículo</span><span aria-hidden="true">→</span></button></div>
+    <div class="card-actions"><button class="card-link" type="button" data-vehicle="${escapeHTML(vehicle.id)}"><span>Conhecer este veículo</span><span aria-hidden="true">→</span></button><a class="card-whatsapp" href="${whatsappUrl(vehicleWhatsAppMessage(vehicle))}" target="_blank" rel="noopener noreferrer" aria-label="Perguntar pelo ${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)} no WhatsApp">WhatsApp</a></div></div>
   </article>`;
 }
 
@@ -63,7 +73,7 @@ function openVehicle(id) {
   const vehicle = vehicles.find(item => String(item.id) === String(id));
   if (!vehicle) return;
   const gallery = [...new Set([vehicle.cover, ...vehicle.images])].filter(Boolean);
-  const message = encodeURIComponent(`Olá! Tenho interesse no ${vehicle.brand} ${vehicle.model}, ano ${vehicle.year}, anunciado por ${money.format(vehicle.price)}.`);
+  const message = encodeURIComponent(vehicleWhatsAppMessage(vehicle));
   $("#vehicle-detail").innerHTML = `<div class="detail-gallery"><img class="detail-main" src="${escapeHTML(gallery[0])}" alt="${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)}"><div class="detail-thumbs">${gallery.map((image, index) => `<button type="button" data-image="${escapeHTML(image)}" aria-label="Exibir foto ${index + 1}"><img src="${escapeHTML(image)}" alt="" loading="lazy"></button>`).join("")}</div></div><div class="detail-copy"><header class="detail-header"><div><span class="eyebrow">${escapeHTML(vehicle.brand)}</span><h2>${escapeHTML(vehicle.model)}</h2></div><span class="detail-availability">Disponível</span><div class="detail-price-card"><small>Preço à vista</small><strong>${money.format(vehicle.price)}</strong></div></header><section class="detail-spec-section"><h3>Dados do veículo</h3><dl><div><dt>Ano</dt><dd>${vehicle.year}/${vehicle.modelYear || vehicle.year}</dd></div><div><dt>Quilometragem</dt><dd>${vehicle.mileage ? `${number.format(vehicle.mileage)} km` : "Consulte"}</dd></div><div><dt>Câmbio</dt><dd>${escapeHTML(vehicle.transmission || "Consulte")}</dd></div><div><dt>Combustível</dt><dd>${escapeHTML(vehicle.fuel || "Consulte")}</dd></div><div><dt>Cor</dt><dd>${escapeHTML(vehicle.color || "Consulte")}</dd></div></dl></section><details class="detail-panel"><summary><span>Sobre este veículo</span><small>Ver descrição completa</small></summary><p>${escapeHTML(vehicle.description || "Fale com nossa equipe para conhecer todos os detalhes deste veículo.")}</p></details>${vehicle.features.length ? `<details class="detail-panel"><summary><span>Itens e diferenciais</span><small>${vehicle.features.length} itens</small></summary><ul class="feature-list">${vehicle.features.map(feature => `<li>${escapeHTML(feature)}</li>`).join("")}</ul></details>` : ""}<div class="detail-cta"><p>Gostou deste veículo?</p><a class="button button-primary button-full" href="https://wa.me/5541996155327?text=${message}" target="_blank" rel="noopener noreferrer">Falar com um consultor</a></div></div>`;
   $("#vehicle-modal").showModal();
   history.replaceState(null, "", `#veiculo=${vehicle.slug || vehicle.id}`);
@@ -110,5 +120,6 @@ $(".modal-close").addEventListener("click", () => $("#vehicle-modal").close());
 $("#vehicle-modal").addEventListener("close", () => { if (location.hash.startsWith("#veiculo=")) history.replaceState(null, "", `${location.pathname}${location.search}`); });
 $("#vehicle-modal").addEventListener("click", event => { if (event.target === event.currentTarget) event.currentTarget.close(); });
 $("#current-year").textContent = new Date().getFullYear();
+initializeWhatsAppLinks();
 calculateFinance();
 loadVehicles();
