@@ -55,6 +55,10 @@ h1,h2,h3{line-height:1.12;letter-spacing:-.035em}h2{font-size:clamp(2rem,4vw,3.3
 @media(max-width:1000px){.authority-grid{grid-template-columns:repeat(2,1fr)}.authority-card:nth-child(3){border-left:0;border-top:1px solid var(--line)}.authority-card:nth-child(4){border-top:1px solid var(--line)}}
 @media(max-width:560px){.authority-strip{padding-bottom:20px}.authority-grid{grid-template-columns:1fr;transform:translateY(-12px)}.authority-card{min-height:92px;padding:17px}.authority-card+.authority-card,.authority-card:nth-child(3),.authority-card:nth-child(4){border-left:0;border-top:1px solid var(--line)}.authority-icon{flex-basis:40px;width:40px;height:40px}.authority-card strong{font-size:.82rem}}
 
+/* Ações inteligentes dos cards */
+.card-actions{display:grid;grid-template-columns:1fr auto;gap:8px}.card-whatsapp{display:grid;place-items:center;padding:0 13px;border:1px solid rgba(37,211,102,.48);border-radius:10px;color:#64e793;font-size:.72rem;font-weight:800}.card-whatsapp:hover{background:#25d366;color:#07101d}
+@media(max-width:560px){.card-actions{grid-template-columns:1fr}.card-whatsapp{min-height:42px}}
+
 /* Vitrine premium */
 body{background:#e9eef4}.site-header{background:rgba(248,250,252,.94)}
 .hero{position:relative;background:radial-gradient(circle at 8% 18%,rgba(245,158,11,.16),transparent 23%),radial-gradient(circle at 82% 72%,rgba(37,67,108,.12),transparent 30%),linear-gradient(135deg,#e8edf4 0%,#f7f8fa 52%,#dfe6ee 100%);border-bottom:1px solid rgba(11,18,32,.08)}.hero::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.32;background-image:linear-gradient(rgba(11,18,32,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(11,18,32,.035) 1px,transparent 1px);background-size:34px 34px;mask-image:linear-gradient(to right,#000,transparent 72%)}.hero-grid{position:relative;z-index:1}.hero-copy h1{text-shadow:0 1px 0 rgba(255,255,255,.8)}.hero-visual::before{background:linear-gradient(145deg,#ffb11b,var(--accent-dark));box-shadow:0 28px 70px rgba(217,130,0,.2)}
