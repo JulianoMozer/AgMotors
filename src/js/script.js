@@ -31,9 +31,10 @@ function vehicleCard(vehicle) {
       <img src="${escapeHTML(vehicle.cover)}" alt="${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)}" width="640" height="480" loading="lazy">
       ${vehicle.featured ? '<span class="card-tag">Destaque</span>' : ""}${unavailable ? `<span class="card-status">${vehicle.status === "sold" ? "Vendido" : "Reservado"}</span>` : ""}
     </button>
-    <div class="vehicle-body"><div class="vehicle-title"><div><small>${escapeHTML(vehicle.brand)}</small><h3>${escapeHTML(vehicle.model)}</h3></div><strong>${money.format(vehicle.price)}</strong></div>
+    <div class="vehicle-body"><div class="vehicle-title"><small>${escapeHTML(vehicle.brand)}</small><h3>${escapeHTML(vehicle.model)}</h3></div>
+    <div class="vehicle-price"><span>Preço à vista</span><strong>${money.format(vehicle.price)}</strong></div>
     <ul class="vehicle-specs"><li><span>Ano</span><strong>${vehicle.year}/${vehicle.modelYear || vehicle.year}</strong></li><li><span>Km</span><strong>${vehicle.mileage ? number.format(vehicle.mileage) : "Consulte"}</strong></li><li><span>Câmbio</span><strong>${escapeHTML(vehicle.transmission || "Consulte")}</strong></li></ul>
-    <button class="card-link" type="button" data-vehicle="${escapeHTML(vehicle.id)}">Ver detalhes <span>→</span></button></div>
+    <button class="card-link" type="button" data-vehicle="${escapeHTML(vehicle.id)}"><span>Conhecer este veículo</span><span aria-hidden="true">→</span></button></div>
   </article>`;
 }
 
