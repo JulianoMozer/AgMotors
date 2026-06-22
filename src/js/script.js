@@ -24,6 +24,21 @@ function normalizeVehicle(vehicle) {
   return { ...vehicle, modelYear: vehicle.modelYear || vehicle.model_year || vehicle.year, images: Array.isArray(vehicle.images) ? vehicle.images : [], features: Array.isArray(vehicle.features) ? vehicle.features : [] };
 }
 
+function vehicleBadges(vehicle) {
+  const text = `${vehicle.description || ""} ${(vehicle.features || []).join(" ")}`.toLocaleLowerCase("pt-BR");
+  const badges = [];
+  if (vehicle.featured) badges.push("Destaque");
+  if (vehicle.created_at && Date.now() - new Date(vehicle.created_at).getTime() < 30 * 864e5) badges.push("Novidade");
+  if (text.includes("oferta")) badges.push("Oferta");
+  if (text.includes("premium")) badges.push("Premium");
+  return badges.slice(0, 2);
+}
+
+function vehicleBenefits(vehicle) {
+  const text = `${vehicle.description || ""} ${(vehicle.features || []).join(" ")}`.toLocaleLowerCase("pt-BR");
+  return [["laudo", "Laudo cautelar"], ["financ", "Aceita financiamento"], ["troca", "Aceita troca"]].filter(([term]) => text.includes(term)).map(([, label]) => label).slice(0, 2);
+}
+
 async function loadVehicles() {
   if (database.configured) {
     try { vehicles = (await database.listVehicles()).map(normalizeVehicle); }
@@ -36,14 +51,16 @@ async function loadVehicles() {
 
 function vehicleCard(vehicle) {
   const unavailable = vehicle.status !== "available";
+  const badges = vehicleBadges(vehicle);
+  const benefits = vehicleBenefits(vehicle);
   return `<article class="vehicle-card">
     <button class="vehicle-cover" type="button" data-vehicle="${escapeHTML(vehicle.id)}" aria-label="Ver detalhes de ${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)}">
       <img src="${escapeHTML(vehicle.cover)}" alt="${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)}" width="640" height="480" loading="lazy">
-      ${vehicle.featured ? '<span class="card-tag">Destaque</span>' : ""}${unavailable ? `<span class="card-status">${vehicle.status === "sold" ? "Vendido" : "Reservado"}</span>` : ""}
+      ${badges.length ? `<span class="card-tags">${badges.map(badge => `<span class="card-tag card-tag-${badge.toLowerCase()}">${badge}</span>`).join("")}</span>` : ""}${unavailable ? `<span class="card-status">${vehicle.status === "sold" ? "Vendido" : "Reservado"}</span>` : ""}
     </button>
     <div class="vehicle-body"><div class="vehicle-title"><small>${escapeHTML(vehicle.brand)}</small><h3>${escapeHTML(vehicle.model)}</h3></div>
     <div class="vehicle-price"><span>Preço à vista</span><strong>${money.format(vehicle.price)}</strong></div>
-    <ul class="vehicle-specs"><li><span>Ano</span><strong>${vehicle.year}/${vehicle.modelYear || vehicle.year}</strong></li><li><span>Km</span><strong>${vehicle.mileage ? number.format(vehicle.mileage) : "Consulte"}</strong></li><li><span>Câmbio</span><strong>${escapeHTML(vehicle.transmission || "Consulte")}</strong></li></ul>
+    <ul class="vehicle-specs"><li><span>Ano</span><strong>${vehicle.year}/${vehicle.modelYear || vehicle.year}</strong></li><li><span>Km</span><strong>${vehicle.mileage ? number.format(vehicle.mileage) : "Consulte"}</strong></li><li><span>Câmbio</span><strong>${escapeHTML(vehicle.transmission || "Consulte")}</strong></li></ul>${benefits.length ? `<ul class="vehicle-benefits">${benefits.map(benefit => `<li>${benefit}</li>`).join("")}</ul>` : ""}
     <div class="card-actions"><button class="card-link" type="button" data-vehicle="${escapeHTML(vehicle.id)}"><span>Conhecer este veículo</span><span aria-hidden="true">→</span></button><a class="card-whatsapp" href="${whatsappUrl(vehicleWhatsAppMessage(vehicle))}" target="_blank" rel="noopener noreferrer" aria-label="Perguntar pelo ${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)} no WhatsApp">WhatsApp</a></div></div>
   </article>`;
 }
