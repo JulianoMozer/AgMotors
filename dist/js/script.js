@@ -43,6 +43,24 @@ function vehicleBenefits(vehicle) {
   return [["laudo", "Laudo cautelar"], ["financ", "Aceita financiamento"], ["troca", "Aceita troca"]].filter(([term]) => text.includes(term)).map(([, label]) => label).slice(0, 2);
 }
 
+function similarVehicles(vehicle) {
+  return vehicles
+    .filter(item => String(item.id) !== String(vehicle.id) && item.status === "available")
+    .map(item => {
+      const priceDistance = Math.abs((item.price || 0) - (vehicle.price || 0));
+      const score = (item.brand === vehicle.brand ? 45 : 0) + (priceDistance <= 20000 ? 35 : priceDistance <= 40000 ? 18 : 0) + (item.featured ? 12 : 0);
+      return { item, score, priceDistance };
+    })
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score || a.priceDistance - b.priceDistance)
+    .slice(0, 4)
+    .map(({ item }) => item);
+}
+
+function similarVehicleCard(vehicle) {
+  return `<article class="similar-card"><button type="button" data-vehicle="${escapeHTML(vehicle.id)}"><img src="${escapeHTML(vehicle.cover)}" alt="${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)}" loading="lazy"><span><small>${escapeHTML(vehicle.brand)}</small><strong>${escapeHTML(vehicle.model)}</strong><em>${money.format(vehicle.price)}</em></span></button></article>`;
+}
+
 async function loadVehicles() {
   if (database.configured) {
     try { vehicles = (await database.listVehicles()).map(normalizeVehicle); }
@@ -96,11 +114,12 @@ function openVehicle(id) {
   const gallery = [...new Set([vehicle.cover, ...vehicle.images])].filter(Boolean);
   const message = encodeURIComponent(vehicleWhatsAppMessage(vehicle));
   const title = `${vehicle.brand} ${vehicle.model}`;
-  $("#vehicle-detail").innerHTML = `<div class="detail-gallery"><button class="detail-main-button" type="button" data-gallery-index="0" aria-label="Ampliar foto principal"><img class="detail-main" src="${escapeHTML(gallery[0])}" alt="${escapeHTML(title)}"></button><div class="detail-thumbs">${gallery.map((image, index) => `<button type="button" data-image="${escapeHTML(image)}" data-gallery-index="${index}" aria-label="Exibir foto ${index + 1}"><img src="${escapeHTML(image)}" alt="" loading="lazy"></button>`).join("")}</div></div><div class="detail-copy"><header class="detail-header"><div><span class="eyebrow">${escapeHTML(vehicle.brand)}</span><h2>${escapeHTML(vehicle.model)}</h2></div><span class="detail-availability">Disponível</span><div class="detail-price-card"><small>Preço à vista</small><strong>${money.format(vehicle.price)}</strong></div></header><section class="detail-spec-section"><h3>Dados do veículo</h3><dl><div><dt>Ano</dt><dd>${vehicle.year}/${vehicle.modelYear || vehicle.year}</dd></div><div><dt>Quilometragem</dt><dd>${vehicle.mileage ? `${number.format(vehicle.mileage)} km` : "Consulte"}</dd></div><div><dt>Câmbio</dt><dd>${escapeHTML(vehicle.transmission || "Consulte")}</dd></div><div><dt>Combustível</dt><dd>${escapeHTML(vehicle.fuel || "Consulte")}</dd></div><div><dt>Cor</dt><dd>${escapeHTML(vehicle.color || "Consulte")}</dd></div></dl></section><details class="detail-panel"><summary><span>Sobre este veículo</span><small>Ver descrição completa</small></summary><p>${escapeHTML(vehicle.description || "Fale com nossa equipe para conhecer todos os detalhes deste veículo.")}</p></details>${vehicle.features.length ? `<details class="detail-panel"><summary><span>Itens e diferenciais</span><small>${vehicle.features.length} itens</small></summary><ul class="feature-list">${vehicle.features.map(feature => `<li>${escapeHTML(feature)}</li>`).join("")}</ul></details>` : ""}<div class="detail-cta"><p>Gostou deste veículo?</p><a class="button button-primary button-full" href="https://wa.me/5541996155327?text=${message}" target="_blank" rel="noopener noreferrer">Falar com um consultor</a></div></div>`;
+  const similar = similarVehicles(vehicle);
+  $("#vehicle-detail").innerHTML = `<div class="detail-gallery"><button class="detail-main-button" type="button" data-gallery-index="0" aria-label="Ampliar foto principal"><img class="detail-main" src="${escapeHTML(gallery[0])}" alt="${escapeHTML(title)}"></button><div class="detail-thumbs">${gallery.map((image, index) => `<button type="button" data-image="${escapeHTML(image)}" data-gallery-index="${index}" aria-label="Exibir foto ${index + 1}"><img src="${escapeHTML(image)}" alt="" loading="lazy"></button>`).join("")}</div></div><div class="detail-copy"><header class="detail-header"><div><span class="eyebrow">${escapeHTML(vehicle.brand)}</span><h2>${escapeHTML(vehicle.model)}</h2></div><span class="detail-availability">Disponível</span><div class="detail-price-card"><small>Preço à vista</small><strong>${money.format(vehicle.price)}</strong></div></header><section class="detail-spec-section"><h3>Dados do veículo</h3><dl><div><dt>Ano</dt><dd>${vehicle.year}/${vehicle.modelYear || vehicle.year}</dd></div><div><dt>Quilometragem</dt><dd>${vehicle.mileage ? `${number.format(vehicle.mileage)} km` : "Consulte"}</dd></div><div><dt>Câmbio</dt><dd>${escapeHTML(vehicle.transmission || "Consulte")}</dd></div><div><dt>Combustível</dt><dd>${escapeHTML(vehicle.fuel || "Consulte")}</dd></div><div><dt>Cor</dt><dd>${escapeHTML(vehicle.color || "Consulte")}</dd></div></dl></section><details class="detail-panel"><summary><span>Sobre este veículo</span><small>Ver descrição completa</small></summary><p>${escapeHTML(vehicle.description || "Fale com nossa equipe para conhecer todos os detalhes deste veículo.")}</p></details>${vehicle.features.length ? `<details class="detail-panel"><summary><span>Itens e diferenciais</span><small>${vehicle.features.length} itens</small></summary><ul class="feature-list">${vehicle.features.map(feature => `<li>${escapeHTML(feature)}</li>`).join("")}</ul></details>` : ""}${similar.length ? `<section class="similar-vehicles"><div><span class="eyebrow">Continue pesquisando</span><h3>Veículos semelhantes</h3></div><div class="similar-grid">${similar.map(similarVehicleCard).join("")}</div></section>` : ""}<div class="detail-cta"><p>Gostou deste veículo?</p><a class="button button-primary button-full" href="https://wa.me/5541996155327?text=${message}" target="_blank" rel="noopener noreferrer">Falar com um consultor</a></div></div>`;
   currentGallery = gallery;
   currentGalleryIndex = 0;
   currentGalleryTitle = title;
-  $("#vehicle-modal").showModal();
+  if (!$("#vehicle-modal").open) $("#vehicle-modal").showModal();
   history.replaceState(null, "", `#veiculo=${vehicle.slug || vehicle.id}`);
 }
 
