@@ -201,6 +201,16 @@
   <a class="floating-whatsapp" href="https://wa.me/5541996155327?text=Ol%C3%A1%2C%20vim%20pelo%20site%20da%20AG%20Motors%20e%20gostaria%20de%20atendimento." target="_blank" rel="noopener noreferrer" aria-label="Falar com a AG Motors pelo WhatsApp"><span aria-hidden="true">✆</span></a>
 
   <dialog class="vehicle-modal" id="vehicle-modal"><button class="modal-close" type="button" aria-label="Fechar detalhes">×</button><div id="vehicle-detail"></div></dialog>
+  <dialog class="gallery-lightbox" id="gallery-lightbox" aria-label="Galeria de fotos do veículo">
+    <button class="gallery-close" type="button" data-gallery-close aria-label="Fechar galeria">×</button>
+    <button class="gallery-nav gallery-prev" type="button" data-gallery-prev aria-label="Foto anterior">‹</button>
+    <figure>
+      <img id="gallery-image" src="" alt="">
+      <figcaption id="gallery-caption"></figcaption>
+    </figure>
+    <button class="gallery-nav gallery-next" type="button" data-gallery-next aria-label="Próxima foto">›</button>
+    <div class="gallery-strip" id="gallery-strip" aria-label="Miniaturas da galeria"></div>
+  </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script type="module" src="js/script.js"></script>
 </body>

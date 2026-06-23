@@ -6,6 +6,9 @@ const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL
 const number = new Intl.NumberFormat("pt-BR");
 let vehicles = [];
 let activePriceRange = null;
+let currentGallery = [];
+let currentGalleryIndex = 0;
+let currentGalleryTitle = "";
 const whatsappNumber = "5541996155327";
 const whatsappUrl = message => `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 const generalWhatsAppMessage = "Olá, vim pelo site da AG Motors e gostaria de atendimento.";
@@ -92,7 +95,11 @@ function openVehicle(id) {
   if (!vehicle) return;
   const gallery = [...new Set([vehicle.cover, ...vehicle.images])].filter(Boolean);
   const message = encodeURIComponent(vehicleWhatsAppMessage(vehicle));
-  $("#vehicle-detail").innerHTML = `<div class="detail-gallery"><img class="detail-main" src="${escapeHTML(gallery[0])}" alt="${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)}"><div class="detail-thumbs">${gallery.map((image, index) => `<button type="button" data-image="${escapeHTML(image)}" aria-label="Exibir foto ${index + 1}"><img src="${escapeHTML(image)}" alt="" loading="lazy"></button>`).join("")}</div></div><div class="detail-copy"><header class="detail-header"><div><span class="eyebrow">${escapeHTML(vehicle.brand)}</span><h2>${escapeHTML(vehicle.model)}</h2></div><span class="detail-availability">Disponível</span><div class="detail-price-card"><small>Preço à vista</small><strong>${money.format(vehicle.price)}</strong></div></header><section class="detail-spec-section"><h3>Dados do veículo</h3><dl><div><dt>Ano</dt><dd>${vehicle.year}/${vehicle.modelYear || vehicle.year}</dd></div><div><dt>Quilometragem</dt><dd>${vehicle.mileage ? `${number.format(vehicle.mileage)} km` : "Consulte"}</dd></div><div><dt>Câmbio</dt><dd>${escapeHTML(vehicle.transmission || "Consulte")}</dd></div><div><dt>Combustível</dt><dd>${escapeHTML(vehicle.fuel || "Consulte")}</dd></div><div><dt>Cor</dt><dd>${escapeHTML(vehicle.color || "Consulte")}</dd></div></dl></section><details class="detail-panel"><summary><span>Sobre este veículo</span><small>Ver descrição completa</small></summary><p>${escapeHTML(vehicle.description || "Fale com nossa equipe para conhecer todos os detalhes deste veículo.")}</p></details>${vehicle.features.length ? `<details class="detail-panel"><summary><span>Itens e diferenciais</span><small>${vehicle.features.length} itens</small></summary><ul class="feature-list">${vehicle.features.map(feature => `<li>${escapeHTML(feature)}</li>`).join("")}</ul></details>` : ""}<div class="detail-cta"><p>Gostou deste veículo?</p><a class="button button-primary button-full" href="https://wa.me/5541996155327?text=${message}" target="_blank" rel="noopener noreferrer">Falar com um consultor</a></div></div>`;
+  const title = `${vehicle.brand} ${vehicle.model}`;
+  $("#vehicle-detail").innerHTML = `<div class="detail-gallery"><button class="detail-main-button" type="button" data-gallery-index="0" aria-label="Ampliar foto principal"><img class="detail-main" src="${escapeHTML(gallery[0])}" alt="${escapeHTML(title)}"></button><div class="detail-thumbs">${gallery.map((image, index) => `<button type="button" data-image="${escapeHTML(image)}" data-gallery-index="${index}" aria-label="Exibir foto ${index + 1}"><img src="${escapeHTML(image)}" alt="" loading="lazy"></button>`).join("")}</div></div><div class="detail-copy"><header class="detail-header"><div><span class="eyebrow">${escapeHTML(vehicle.brand)}</span><h2>${escapeHTML(vehicle.model)}</h2></div><span class="detail-availability">Disponível</span><div class="detail-price-card"><small>Preço à vista</small><strong>${money.format(vehicle.price)}</strong></div></header><section class="detail-spec-section"><h3>Dados do veículo</h3><dl><div><dt>Ano</dt><dd>${vehicle.year}/${vehicle.modelYear || vehicle.year}</dd></div><div><dt>Quilometragem</dt><dd>${vehicle.mileage ? `${number.format(vehicle.mileage)} km` : "Consulte"}</dd></div><div><dt>Câmbio</dt><dd>${escapeHTML(vehicle.transmission || "Consulte")}</dd></div><div><dt>Combustível</dt><dd>${escapeHTML(vehicle.fuel || "Consulte")}</dd></div><div><dt>Cor</dt><dd>${escapeHTML(vehicle.color || "Consulte")}</dd></div></dl></section><details class="detail-panel"><summary><span>Sobre este veículo</span><small>Ver descrição completa</small></summary><p>${escapeHTML(vehicle.description || "Fale com nossa equipe para conhecer todos os detalhes deste veículo.")}</p></details>${vehicle.features.length ? `<details class="detail-panel"><summary><span>Itens e diferenciais</span><small>${vehicle.features.length} itens</small></summary><ul class="feature-list">${vehicle.features.map(feature => `<li>${escapeHTML(feature)}</li>`).join("")}</ul></details>` : ""}<div class="detail-cta"><p>Gostou deste veículo?</p><a class="button button-primary button-full" href="https://wa.me/5541996155327?text=${message}" target="_blank" rel="noopener noreferrer">Falar com um consultor</a></div></div>`;
+  currentGallery = gallery;
+  currentGalleryIndex = 0;
+  currentGalleryTitle = title;
   $("#vehicle-modal").showModal();
   history.replaceState(null, "", `#veiculo=${vehicle.slug || vehicle.id}`);
 }
@@ -137,6 +144,36 @@ function clearPriceShortcut() {
   renderVehicles();
 }
 
+function updateDetailImage(button) {
+  currentGalleryIndex = Number(button.dataset.galleryIndex) || 0;
+  $(".detail-main").src = button.dataset.image;
+  const mainButton = $(".detail-main-button");
+  if (mainButton) mainButton.dataset.galleryIndex = String(currentGalleryIndex);
+  document.querySelectorAll(".detail-thumbs button").forEach(item => item.classList.toggle("is-active", item === button));
+}
+
+function renderGalleryLightbox() {
+  if (!currentGallery.length) return;
+  const image = currentGallery[currentGalleryIndex];
+  $("#gallery-image").src = image;
+  $("#gallery-image").alt = `${currentGalleryTitle} - foto ${currentGalleryIndex + 1}`;
+  $("#gallery-caption").textContent = `${currentGalleryTitle} • ${currentGalleryIndex + 1} de ${currentGallery.length}`;
+  $("#gallery-strip").innerHTML = currentGallery.map((item, index) => `<button type="button" data-gallery-thumb="${index}" class="${index === currentGalleryIndex ? "is-active" : ""}" aria-label="Abrir foto ${index + 1}"><img src="${escapeHTML(item)}" alt="" loading="lazy"></button>`).join("");
+}
+
+function openGalleryLightbox(index = currentGalleryIndex) {
+  if (!currentGallery.length) return;
+  currentGalleryIndex = Math.max(0, Math.min(Number(index) || 0, currentGallery.length - 1));
+  renderGalleryLightbox();
+  $("#gallery-lightbox").showModal();
+}
+
+function moveGalleryLightbox(direction) {
+  if (!currentGallery.length) return;
+  currentGalleryIndex = (currentGalleryIndex + direction + currentGallery.length) % currentGallery.length;
+  renderGalleryLightbox();
+}
+
 $(".menu-toggle").addEventListener("click", event => {
   const open = event.currentTarget.getAttribute("aria-expanded") === "true";
   event.currentTarget.setAttribute("aria-expanded", String(!open)); $(".main-nav").classList.toggle("open", !open);
@@ -145,7 +182,12 @@ document.addEventListener("click", event => {
   const priceButton = event.target.closest("[data-price-min]"); if (priceButton) applyPriceShortcut(priceButton);
   const clearPriceButton = event.target.closest("[data-price-clear]"); if (clearPriceButton) clearPriceShortcut();
   const button = event.target.closest("[data-vehicle]"); if (button) openVehicle(button.dataset.vehicle);
-  const image = event.target.closest("[data-image]"); if (image) $(".detail-main").src = image.dataset.image;
+  const image = event.target.closest("[data-image]"); if (image) updateDetailImage(image);
+  const mainImage = event.target.closest(".detail-main-button"); if (mainImage) openGalleryLightbox(Number(mainImage.dataset.galleryIndex) || 0);
+  const galleryThumb = event.target.closest("[data-gallery-thumb]"); if (galleryThumb) { currentGalleryIndex = Number(galleryThumb.dataset.galleryThumb) || 0; renderGalleryLightbox(); }
+  if (event.target.closest("[data-gallery-prev]")) moveGalleryLightbox(-1);
+  if (event.target.closest("[data-gallery-next]")) moveGalleryLightbox(1);
+  if (event.target.closest("[data-gallery-close]")) $("#gallery-lightbox").close();
   if (event.target.matches(".main-nav a")) { $(".main-nav").classList.remove("open"); $(".menu-toggle").setAttribute("aria-expanded", "false"); }
 });
 ["#vehicle-search", "#brand-filter", "#sort-filter"].forEach(selector => $(selector).addEventListener("input", renderVehicles));
@@ -156,6 +198,12 @@ $("#sell-phone").addEventListener("input", event => { const digits = event.targe
 $(".modal-close").addEventListener("click", () => $("#vehicle-modal").close());
 $("#vehicle-modal").addEventListener("close", () => { if (location.hash.startsWith("#veiculo=")) history.replaceState(null, "", `${location.pathname}${location.search}`); });
 $("#vehicle-modal").addEventListener("click", event => { if (event.target === event.currentTarget) event.currentTarget.close(); });
+$("#gallery-lightbox").addEventListener("click", event => { if (event.target === event.currentTarget) event.currentTarget.close(); });
+document.addEventListener("keydown", event => {
+  if (!$("#gallery-lightbox").open) return;
+  if (event.key === "ArrowLeft") moveGalleryLightbox(-1);
+  if (event.key === "ArrowRight") moveGalleryLightbox(1);
+});
 $("#current-year").textContent = new Date().getFullYear();
 initializeWhatsAppLinks();
 calculateFinance();
