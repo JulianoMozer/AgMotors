@@ -5,6 +5,7 @@ const $ = (selector, scope = document) => scope.querySelector(selector);
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const number = new Intl.NumberFormat("pt-BR");
 let vehicles = [];
+let activePriceRange = null;
 const whatsappNumber = "5541996155327";
 const whatsappUrl = message => `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 const generalWhatsAppMessage = "Olá, vim pelo site da AG Motors e gostaria de atendimento.";
@@ -69,7 +70,7 @@ function filteredVehicles() {
   const query = $("#vehicle-search").value.trim().toLocaleLowerCase("pt-BR");
   const brand = $("#brand-filter").value;
   const sort = $("#sort-filter").value;
-  const result = vehicles.filter(v => (!query || `${v.brand} ${v.model}`.toLocaleLowerCase("pt-BR").includes(query)) && (!brand || v.brand === brand));
+  const result = vehicles.filter(v => (!query || `${v.brand} ${v.model}`.toLocaleLowerCase("pt-BR").includes(query)) && (!brand || v.brand === brand) && (!activePriceRange || (v.price >= activePriceRange.min && (activePriceRange.max === null || v.price <= activePriceRange.max))));
   result.sort((a, b) => sort === "price-asc" ? a.price - b.price : sort === "price-desc" ? b.price - a.price : sort === "year-desc" ? b.year - a.year : Number(b.featured) - Number(a.featured));
   return result;
 }
@@ -119,11 +120,30 @@ function showToast(message) {
   clearTimeout(showToast.timer); showToast.timer = setTimeout(() => toast.classList.remove("show"), 3500);
 }
 
+function applyPriceShortcut(button) {
+  activePriceRange = { min: Number(button.dataset.priceMin) || 0, max: button.dataset.priceMax ? Number(button.dataset.priceMax) : null };
+  document.querySelectorAll("[data-price-min]").forEach(item => item.classList.toggle("is-active", item === button));
+  const clearButton = $("[data-price-clear]");
+  if (clearButton) clearButton.hidden = false;
+  renderVehicles();
+  $("#estoque").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function clearPriceShortcut() {
+  activePriceRange = null;
+  document.querySelectorAll("[data-price-min]").forEach(item => item.classList.remove("is-active"));
+  const clearButton = $("[data-price-clear]");
+  if (clearButton) clearButton.hidden = true;
+  renderVehicles();
+}
+
 $(".menu-toggle").addEventListener("click", event => {
   const open = event.currentTarget.getAttribute("aria-expanded") === "true";
   event.currentTarget.setAttribute("aria-expanded", String(!open)); $(".main-nav").classList.toggle("open", !open);
 });
 document.addEventListener("click", event => {
+  const priceButton = event.target.closest("[data-price-min]"); if (priceButton) applyPriceShortcut(priceButton);
+  const clearPriceButton = event.target.closest("[data-price-clear]"); if (clearPriceButton) clearPriceShortcut();
   const button = event.target.closest("[data-vehicle]"); if (button) openVehicle(button.dataset.vehicle);
   const image = event.target.closest("[data-image]"); if (image) $(".detail-main").src = image.dataset.image;
   if (event.target.matches(".main-nav a")) { $(".main-nav").classList.remove("open"); $(".menu-toggle").setAttribute("aria-expanded", "false"); }
