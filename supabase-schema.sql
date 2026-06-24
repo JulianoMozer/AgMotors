@@ -37,7 +37,7 @@ create table if not exists public.financing_leads (
   birth_date date not null,
   has_cnh boolean not null,
   phone text not null,
-  status text default 'novo',
+  status text default 'novo' check (status in ('novo','em_atendimento','finalizado')),
   created_at timestamptz default now()
 );
 
@@ -57,6 +57,10 @@ create policy "Admin exclui veículos" on public.vehicles for delete using (publ
 create policy "Publico envia pre-analise" on public.financing_leads for insert with check (coalesce(status, 'novo') = 'novo');
 create policy "Admin ve leads de financiamento" on public.financing_leads for select using (public.is_admin());
 create policy "Admin atualiza leads de financiamento" on public.financing_leads for update using (public.is_admin()) with check (public.is_admin());
+
+grant usage on schema public to anon, authenticated;
+grant insert on table public.financing_leads to anon, authenticated;
+grant select, update on table public.financing_leads to authenticated;
 
 insert into storage.buckets (id,name,public) values ('vehicle-images','vehicle-images',true) on conflict (id) do update set public = true;
 create policy "Imagens públicas" on storage.objects for select using (bucket_id = 'vehicle-images');

@@ -38,6 +38,16 @@ function formatPhone(value) {
   return digits.replace(/^(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d{4})$/, "$1-$2");
 }
 
+function setFinanceLeadState(state = "form") {
+  const form = $("#finance-lead-form");
+  const success = $("#finance-lead-success");
+  const successVisible = state === "success";
+  form.hidden = successVisible;
+  success.hidden = !successVisible;
+  form.style.display = successVisible ? "none" : "";
+  success.style.display = successVisible ? "" : "none";
+}
+
 function normalizeVehicle(vehicle) {
   return { ...vehicle, modelYear: vehicle.modelYear || vehicle.model_year || vehicle.year, images: Array.isArray(vehicle.images) ? vehicle.images : [], features: Array.isArray(vehicle.features) ? vehicle.features : [] };
 }
@@ -153,8 +163,7 @@ function openFinanceLead(vehicleId) {
   if (!vehicle) return;
   currentLeadVehicle = vehicle;
   $("#finance-lead-form").reset();
-  $("#finance-lead-form").hidden = false;
-  $("#finance-lead-success").hidden = true;
+  setFinanceLeadState("form");
   $("#finance-lead-message").textContent = "";
   $("#finance-lead-vehicle").innerHTML = `<strong>${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)}</strong><span>${money.format(vehicle.price)} • Código ${escapeHTML(vehicle.slug || vehicle.id)}</span>`;
   $("#finance-lead-modal").showModal();
@@ -165,9 +174,11 @@ async function submitFinanceLead(event) {
   if (!currentLeadVehicle || !event.currentTarget.reportValidity()) return;
   const cpf = digitsOnly($("#lead-cpf").value);
   const phone = digitsOnly($("#lead-phone").value);
+  const submitButton = event.currentTarget.querySelector('button[type="submit"]');
   if (cpf.length !== 11) { $("#finance-lead-message").textContent = "Informe um CPF válido."; return; }
   if (phone.length < 10) { $("#finance-lead-message").textContent = "Informe um celular válido."; return; }
   $("#finance-lead-message").textContent = "Enviando solicitação...";
+  if (submitButton) submitButton.disabled = true;
   try {
     await database.createFinancingLead({
       vehicle_id: String(currentLeadVehicle.slug || currentLeadVehicle.id),
@@ -178,11 +189,13 @@ async function submitFinanceLead(event) {
       has_cnh: event.currentTarget.elements.has_cnh.value === "true",
       phone
     });
-    $("#finance-lead-form").hidden = true;
-    $("#finance-lead-success").hidden = false;
+    setFinanceLeadState("success");
   } catch (error) {
     console.error("Erro ao salvar lead de financiamento:", error);
+    setFinanceLeadState("form");
     $("#finance-lead-message").textContent = "Não foi possível enviar sua solicitação agora. Tente novamente ou fale com a AG Motors pelo WhatsApp.";
+  } finally {
+    if (submitButton) submitButton.disabled = false;
   }
 }
 
