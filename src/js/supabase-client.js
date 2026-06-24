@@ -35,7 +35,16 @@ export const database = {
     return request(`/rest/v1/vehicles?id=eq.${encodeURIComponent(id)}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}`, Prefer: "return=minimal" } });
   },
   async createFinancingLead(lead) {
-    return request("/rest/v1/financing_leads", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(lead) });
+    const response = await fetch(`${config.supabaseUrl}/rest/v1/financing_leads`, {
+      method: "POST",
+      headers: { ...baseHeaders, Prefer: "return=minimal" },
+      body: JSON.stringify(lead)
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || error.msg || error.error_description || "NÃ£o foi possÃ­vel concluir a operaÃ§Ã£o.");
+    }
+    return null;
   },
   async listFinancingLeads(token) {
     return request("/rest/v1/financing_leads?select=*&order=created_at.desc", { headers: { Authorization: `Bearer ${token}` } });
