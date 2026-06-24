@@ -12,7 +12,7 @@ let originalImages = [];
 let draggedPhotoId = "";
 
 const statusLabels = { available: "Disponível", reserved: "Reservado", sold: "Vendido" };
-const leadStatusLabels = { new: "Novo", contacting: "Em atendimento", finished: "Finalizado" };
+const leadStatusLabels = { novo: "Novo", em_atendimento: "Em atendimento", finalizado: "Finalizado" };
 const escapeHTML = (value = "") => String(value).replace(/[&<>'"]/g, char => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" }[char]));
 
 function message(selector, text = "") { $(selector).textContent = text; }
@@ -43,9 +43,9 @@ function render() {
 }
 
 function renderFinancingLeads() {
-  $("#lead-list").innerHTML = financingLeads.map(lead => `<tr><td><div class="lead-vehicle"><strong>${escapeHTML(lead.vehicle_title)}</strong><small>${money.format(lead.vehicle_price)} • ${escapeHTML(lead.vehicle_code)}</small></div></td><td>${escapeHTML(formatCPF(lead.cpf))}</td><td>${lead.birth_date ? new Date(`${lead.birth_date}T00:00:00`).toLocaleDateString("pt-BR") : "—"}</td><td>${lead.has_cnh ? "Sim" : "Não"}</td><td><a href="https://wa.me/55${escapeHTML(lead.phone)}" target="_blank" rel="noopener">${escapeHTML(formatPhone(lead.phone))}</a></td><td>${lead.created_at ? dateTime.format(new Date(lead.created_at)) : "—"}</td><td><select class="lead-status-select" data-lead-status="${escapeHTML(lead.id)}">${Object.entries(leadStatusLabels).map(([value,label]) => `<option value="${value}" ${lead.status === value ? "selected" : ""}>${label}</option>`).join("")}</select></td></tr>`).join("");
+  $("#lead-list").innerHTML = financingLeads.map(lead => `<tr><td><div class="lead-vehicle"><strong>${escapeHTML(lead.vehicle_title)}</strong><small>${money.format(lead.vehicle_price)} • ${escapeHTML(lead.vehicle_id || "")}</small></div></td><td>${escapeHTML(formatCPF(lead.cpf))}</td><td>${lead.birth_date ? new Date(`${lead.birth_date}T00:00:00`).toLocaleDateString("pt-BR") : "—"}</td><td>${lead.has_cnh ? "Sim" : "Não"}</td><td><a href="https://wa.me/55${escapeHTML(lead.phone)}" target="_blank" rel="noopener">${escapeHTML(formatPhone(lead.phone))}</a></td><td>${lead.created_at ? dateTime.format(new Date(lead.created_at)) : "—"}</td><td><select class="lead-status-select" data-lead-status="${escapeHTML(lead.id)}">${Object.entries(leadStatusLabels).map(([value,label]) => `<option value="${value}" ${lead.status === value ? "selected" : ""}>${label}</option>`).join("")}</select></td></tr>`).join("");
   $("#lead-empty").hidden = financingLeads.length > 0;
-  ["new","contacting","finished"].forEach(statusName => $(`#lead-${statusName}`).textContent = financingLeads.filter(lead => lead.status === statusName).length);
+  [["new","novo"],["contacting","em_atendimento"],["finished","finalizado"]].forEach(([elementId,statusName]) => $(`#lead-${elementId}`).textContent = financingLeads.filter(lead => lead.status === statusName).length);
 }
 
 function switchView(view) {

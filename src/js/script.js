@@ -170,7 +170,7 @@ async function submitFinanceLead(event) {
   $("#finance-lead-message").textContent = "Enviando solicitação...";
   try {
     await database.createFinancingLead({
-      vehicle_code: String(currentLeadVehicle.slug || currentLeadVehicle.id),
+      vehicle_id: String(currentLeadVehicle.slug || currentLeadVehicle.id),
       vehicle_title: `${currentLeadVehicle.brand} ${currentLeadVehicle.model}`,
       vehicle_price: Number(currentLeadVehicle.price) || 0,
       cpf,
@@ -181,7 +181,8 @@ async function submitFinanceLead(event) {
     $("#finance-lead-form").hidden = true;
     $("#finance-lead-success").hidden = false;
   } catch (error) {
-    $("#finance-lead-message").textContent = error.message;
+    console.error("Erro ao salvar lead de financiamento:", error);
+    $("#finance-lead-message").textContent = "Não foi possível enviar sua solicitação agora. Tente novamente ou fale com a AG Motors pelo WhatsApp.";
   }
 }
 
