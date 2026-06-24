@@ -245,6 +245,28 @@
   <a class="floating-whatsapp" href="https://wa.me/5541996155327?text=Ol%C3%A1%2C%20vim%20pelo%20site%20da%20AG%20Motors%20e%20gostaria%20de%20atendimento." target="_blank" rel="noopener noreferrer" aria-label="Falar com a AG Motors pelo WhatsApp"><span aria-hidden="true">✆</span></a>
 
   <dialog class="vehicle-modal" id="vehicle-modal"><button class="modal-close" type="button" aria-label="Fechar detalhes">×</button><div id="vehicle-detail"></div></dialog>
+  <dialog class="finance-lead-modal" id="finance-lead-modal" aria-labelledby="finance-lead-title">
+    <button class="finance-lead-close" type="button" aria-label="Fechar pré-análise">×</button>
+    <form id="finance-lead-form" class="finance-lead-card">
+      <span class="eyebrow">Pré-análise de financiamento</span>
+      <h2 id="finance-lead-title">Descubra se você consegue financiar</h2>
+      <p>Informe apenas os dados essenciais. A equipe da AG Motors fará a pré-análise manual com os bancos parceiros.</p>
+      <div class="finance-lead-vehicle" id="finance-lead-vehicle"></div>
+      <label>CPF<input id="lead-cpf" name="cpf" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00" maxlength="14" required></label>
+      <label>Data de nascimento<input id="lead-birth-date" name="data_nascimento" type="date" required></label>
+      <fieldset><legend>Possui CNH?</legend><label><input type="radio" name="has_cnh" value="true" required> Sim</label><label><input type="radio" name="has_cnh" value="false"> Não</label></fieldset>
+      <label>Celular<input id="lead-phone" name="celular" inputmode="tel" autocomplete="tel" placeholder="(41) 99999-9999" maxlength="15" required></label>
+      <small>Seus dados serão usados apenas para atendimento desta solicitação.</small>
+      <p class="form-message" id="finance-lead-message" role="alert"></p>
+      <button class="button button-primary button-full" type="submit">Enviar pré-análise</button>
+    </form>
+    <div class="finance-lead-card finance-lead-success" id="finance-lead-success" hidden>
+      <span class="eyebrow">Solicitação recebida</span>
+      <h2>Recebemos sua solicitação.</h2>
+      <p>Nossa equipe realizará uma pré-análise e entrará em contato em breve para informar as melhores opções de financiamento.</p>
+      <button class="button button-dark button-full" type="button" data-finance-lead-done>Fechar</button>
+    </div>
+  </dialog>
   <dialog class="gallery-lightbox" id="gallery-lightbox" aria-label="Galeria de fotos do veículo">
     <button class="gallery-close" type="button" data-gallery-close aria-label="Fechar galeria">×</button>
     <button class="gallery-nav gallery-prev" type="button" data-gallery-prev aria-label="Foto anterior">‹</button>
