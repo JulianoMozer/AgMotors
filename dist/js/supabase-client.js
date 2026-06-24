@@ -34,6 +34,15 @@ export const database = {
   async deleteVehicle(id, token) {
     return request(`/rest/v1/vehicles?id=eq.${encodeURIComponent(id)}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}`, Prefer: "return=minimal" } });
   },
+  async createFinancingLead(lead) {
+    return request("/rest/v1/financing_leads", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(lead) });
+  },
+  async listFinancingLeads(token) {
+    return request("/rest/v1/financing_leads?select=*&order=created_at.desc", { headers: { Authorization: `Bearer ${token}` } });
+  },
+  async updateFinancingLeadStatus(id, status, token) {
+    return request(`/rest/v1/financing_leads?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", headers: { Authorization: `Bearer ${token}`, Prefer: "return=representation" }, body: JSON.stringify({ status }) });
+  },
   async uploadImage(file, token) {
     const safeName = `${Date.now()}-${file.name.toLowerCase().replace(/[^a-z0-9.]+/g, "-")}`;
     const path = `vehicles/${safeName}`;

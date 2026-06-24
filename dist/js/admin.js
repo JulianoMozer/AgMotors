@@ -2,24 +2,34 @@ import { database } from "./supabase-client.js";
 
 const $ = (selector, scope = document) => scope.querySelector(selector);
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const dateTime = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
 let token = sessionStorage.getItem("ag-admin-token") || "";
 let vehicles = [];
+let financingLeads = [];
 let deletingId = null;
 let photoItems = [];
 let originalImages = [];
 let draggedPhotoId = "";
 
 const statusLabels = { available: "Disponível", reserved: "Reservado", sold: "Vendido" };
+const leadStatusLabels = { new: "Novo", contacting: "Em atendimento", finished: "Finalizado" };
 const escapeHTML = (value = "") => String(value).replace(/[&<>'"]/g, char => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" }[char]));
 
 function message(selector, text = "") { $(selector).textContent = text; }
 function toast(text) { const element = $("#admin-toast"); element.textContent = text; element.classList.add("show"); setTimeout(() => element.classList.remove("show"), 3200); }
 function setSession(authToken) { token = authToken; sessionStorage.setItem("ag-admin-token", authToken); }
 function showLogin() { $("#login-view").hidden = false; $("#admin-view").hidden = true; }
-function showAdmin() { $("#login-view").hidden = true; $("#admin-view").hidden = false; loadVehicles(); }
+function showAdmin() { $("#login-view").hidden = true; $("#admin-view").hidden = false; loadVehicles(); loadFinancingLeads(); }
+function formatCPF(value = "") { return String(value).replace(/\D/g, "").slice(0, 11).replace(/^(\d{3})(\d)/, "$1.$2").replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3").replace(/\.(\d{3})(\d)/, ".$1-$2"); }
+function formatPhone(value = "") { return String(value).replace(/\D/g, "").slice(0, 11).replace(/^(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d{4})$/, "$1-$2"); }
 
 async function loadVehicles() {
   try { vehicles = await database.listVehicles({ includeInactive: true, token }); render(); }
+  catch (error) { if (/jwt|token|unauthorized/i.test(error.message)) { sessionStorage.removeItem("ag-admin-token"); showLogin(); } else toast(error.message); }
+}
+
+async function loadFinancingLeads() {
+  try { financingLeads = await database.listFinancingLeads(token); renderFinancingLeads(); }
   catch (error) { if (/jwt|token|unauthorized/i.test(error.message)) { sessionStorage.removeItem("ag-admin-token"); showLogin(); } else toast(error.message); }
 }
 
@@ -30,6 +40,19 @@ function render() {
   $("#admin-empty").hidden = filtered.length > 0;
   $("#stat-total").textContent = vehicles.length;
   ["available","reserved","sold"].forEach(statusName => $(`#stat-${statusName}`).textContent = vehicles.filter(v => v.status === statusName).length);
+}
+
+function renderFinancingLeads() {
+  $("#lead-list").innerHTML = financingLeads.map(lead => `<tr><td><div class="lead-vehicle"><strong>${escapeHTML(lead.vehicle_title)}</strong><small>${money.format(lead.vehicle_price)} • ${escapeHTML(lead.vehicle_code)}</small></div></td><td>${escapeHTML(formatCPF(lead.cpf))}</td><td>${lead.birth_date ? new Date(`${lead.birth_date}T00:00:00`).toLocaleDateString("pt-BR") : "—"}</td><td>${lead.has_cnh ? "Sim" : "Não"}</td><td><a href="https://wa.me/55${escapeHTML(lead.phone)}" target="_blank" rel="noopener">${escapeHTML(formatPhone(lead.phone))}</a></td><td>${lead.created_at ? dateTime.format(new Date(lead.created_at)) : "—"}</td><td><select class="lead-status-select" data-lead-status="${escapeHTML(lead.id)}">${Object.entries(leadStatusLabels).map(([value,label]) => `<option value="${value}" ${lead.status === value ? "selected" : ""}>${label}</option>`).join("")}</select></td></tr>`).join("");
+  $("#lead-empty").hidden = financingLeads.length > 0;
+  ["new","contacting","finished"].forEach(statusName => $(`#lead-${statusName}`).textContent = financingLeads.filter(lead => lead.status === statusName).length);
+}
+
+function switchView(view) {
+  document.querySelectorAll("[data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));
+  document.querySelectorAll(".inventory-view").forEach(element => { element.hidden = view !== "inventory"; });
+  $("#financing-view").hidden = view !== "financing";
+  if (view === "financing") loadFinancingLeads();
 }
 
 function openForm(vehicle = null) {
@@ -48,9 +71,16 @@ function slugify(text) { return text.normalize("NFD").replace(/[\u0300-\u036f]/g
 
 $("#login-form").addEventListener("submit", async event => { event.preventDefault(); message("#login-message", "Entrando..."); try { const session = await database.signIn($("#login-email").value, $("#login-password").value); setSession(session.access_token); message("#login-message"); showAdmin(); } catch (error) { message("#login-message", error.message); } });
 $("#logout-button").addEventListener("click", () => { sessionStorage.removeItem("ag-admin-token"); token = ""; showLogin(); });
+document.querySelectorAll("[data-view]").forEach(button => button.addEventListener("click", () => switchView(button.dataset.view)));
+$("#refresh-leads").addEventListener("click", loadFinancingLeads);
 $("#new-vehicle").addEventListener("click", () => openForm());
 ["#admin-search", "#admin-status"].forEach(selector => $(selector).addEventListener("input", render));
 $("#admin-list").addEventListener("click", event => { const edit = event.target.closest("[data-edit]"); const remove = event.target.closest("[data-delete]"); if (edit) openForm(vehicles.find(v => String(v.id) === edit.dataset.edit)); if (remove) { deletingId = remove.dataset.delete; $("#delete-modal").showModal(); } });
+$("#lead-list").addEventListener("change", async event => {
+  const select = event.target.closest("[data-lead-status]"); if (!select) return;
+  try { await database.updateFinancingLeadStatus(select.dataset.leadStatus, select.value, token); toast("Status do lead atualizado."); loadFinancingLeads(); }
+  catch (error) { toast(error.message); }
+});
 document.querySelectorAll(".admin-modal-close").forEach(button => button.addEventListener("click", () => $("#vehicle-form-modal").close()));
 $("#existing-images").insertAdjacentHTML("beforebegin", '<p class="photo-order-help">Arraste as fotos para organizar. A primeira imagem será a capa principal do veículo.</p>');
 $("#admin-images").addEventListener("change", event => {
