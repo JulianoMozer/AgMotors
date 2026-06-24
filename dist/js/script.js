@@ -134,11 +134,11 @@ function calculateFinance() {
   const total = Number($("#finance-value").value) || 0;
   const down = Math.min(Number($("#finance-down").value) || 0, total);
   const months = Number($("#finance-term").value);
-  const monthlyRate = 0.0199;
+  const monthlyRate = 0.0299;
   const financed = Math.max(total - down, 0);
   const installment = financed ? financed * (monthlyRate * (1 + monthlyRate) ** months) / ((1 + monthlyRate) ** months - 1) : 0;
   $("#finance-result").textContent = money.format(installment);
-  return { total, down, months, installment };
+  return { total, down, months, installment, monthlyRate };
 }
 
 function showToast(message) {
@@ -211,7 +211,7 @@ document.addEventListener("click", event => {
 });
 ["#vehicle-search", "#brand-filter", "#sort-filter"].forEach(selector => $(selector).addEventListener("input", renderVehicles));
 ["#finance-value", "#finance-down", "#finance-term"].forEach(selector => $(selector).addEventListener("input", calculateFinance));
-$("#finance-form").addEventListener("submit", event => { event.preventDefault(); const value = calculateFinance(); const text = encodeURIComponent(`Olá! Fiz uma simulação no site da AG Motors. Veículo: ${money.format(value.total)}, entrada: ${money.format(value.down)}, prazo: ${value.months} meses, parcela estimada: ${money.format(value.installment)}. Gostaria de consultar as condições.`); window.open(`https://wa.me/5541996155327?text=${text}`, "_blank", "noopener"); });
+$("#finance-form").addEventListener("submit", event => { event.preventDefault(); const value = calculateFinance(); const text = encodeURIComponent(`Olá! Fiz uma estimativa de financiamento no site da AG Motors. Veículo: ${money.format(value.total)}, entrada: ${money.format(value.down)}, prazo: ${value.months} meses, parcela de referência: ${money.format(value.installment)} com taxa simulada de ${(value.monthlyRate * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}% a.m. Gostaria de consultar as condições reais nos bancos parceiros.`); window.open(`https://wa.me/5541996155327?text=${text}`, "_blank", "noopener"); });
 $("#sell-form").addEventListener("submit", event => { event.preventDefault(); if (!event.currentTarget.reportValidity()) return; const text = encodeURIComponent(`Olá! Quero avaliar meu carro.\n\nNome: ${$("#sell-name").value}\nWhatsApp: ${$("#sell-phone").value}\nVeículo: ${$("#sell-brand").value} ${$("#sell-model").value}\nAno: ${$("#sell-year").value}\nQuilometragem: ${$("#sell-mileage").value}\nObservações: ${$("#sell-notes").value || "Não informado"}`); window.open(`https://wa.me/5541996155327?text=${text}`, "_blank", "noopener"); });
 $("#sell-phone").addEventListener("input", event => { const digits = event.target.value.replace(/\D/g, "").slice(0, 11); event.target.value = digits.replace(/^(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d{4})$/, "$1-$2"); });
 $(".modal-close").addEventListener("click", () => $("#vehicle-modal").close());
