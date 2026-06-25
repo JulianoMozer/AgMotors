@@ -154,14 +154,15 @@ html{scroll-padding-top:96px}.button,.nav-cta,.card-link,.card-whatsapp,.price-b
   .feed-open-button::after{content:"↕";margin-left:9px;color:var(--accent)}
   .feed-open-button:disabled{opacity:.55}
   .feed-card-button{display:block;position:absolute;z-index:4;right:13px;bottom:calc(42% + 10px);border:1px solid rgba(255,255,255,.72);border-radius:999px;background:rgba(11,18,32,.72);backdrop-filter:blur(8px);color:#fff;padding:7px 10px;font-size:.68rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
-  .stock-feed-modal{position:fixed;inset:0;display:block;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;border:0;border-radius:0;padding:0;overflow:hidden;background:#050b14;color:#fff;touch-action:none}
+  .stock-feed-modal:not([open]){display:none!important}
+  .stock-feed-modal[open]{position:fixed;inset:0;display:block;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;border:0;border-radius:0;padding:0;overflow:hidden;background:#050b14;color:#fff;touch-action:none}
   .stock-feed-modal::backdrop{background:#050b14}
   .feed-close,.feed-position,.feed-photo-position{position:absolute;z-index:5}
   .feed-close{right:14px;top:14px;width:42px;height:42px;border:0;border-radius:50%;background:rgba(255,255,255,.92);color:var(--navy);font-size:1.55rem}
   .feed-position{left:14px;top:18px;padding:7px 10px;border-radius:999px;background:rgba(5,11,20,.62);font-size:.76rem;font-weight:900}
   .feed-photo-position{right:14px;top:64px;padding:6px 9px;border-radius:999px;background:rgba(5,11,20,.62);font-size:.7rem;font-weight:900}
   .feed-card{position:relative;width:100%;height:100%;overflow:hidden;background:#050b14}
-  .feed-image-wrap{position:absolute;inset:0 0 30%;display:grid;place-items:center;background:linear-gradient(180deg,#0c1626,#050b14)}
+  .feed-image-wrap{position:absolute;inset:0 0 30%;display:grid;place-items:center;background:linear-gradient(180deg,#0c1626,#050b14);cursor:pointer}
   .feed-image-wrap img{width:100%;height:100%;object-fit:contain}
   .feed-info{position:absolute;left:0;right:0;bottom:0;padding:24px 18px 22px;background:linear-gradient(180deg,rgba(5,11,20,0),rgba(5,11,20,.92) 16%,#050b14 100%)}
   .feed-info small{display:block;color:var(--accent);font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.12em}
@@ -174,6 +175,9 @@ html{scroll-padding-top:96px}.button,.nav-cta,.card-link,.card-whatsapp,.price-b
   .feed-actions a{display:grid;place-items:center;background:#21c45d;color:#fff}
   .feed-actions button{background:#fff;color:var(--navy)}
   .feed-actions button:last-child{grid-column:1/-1;background:var(--accent);border-color:transparent}
+  .feed-empty{height:100%;display:grid;place-items:center;gap:8px;padding:24px;text-align:center;background:#050b14;color:#fff}
+  .feed-empty strong{display:block;font-size:1.25rem}
+  .feed-empty span{color:#cbd5e1}
 }
 
 /* Páginas institucionais */
