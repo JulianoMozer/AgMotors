@@ -43,8 +43,16 @@ function render() {
 }
 
 function renderFinancingLeads() {
-  $("#lead-list").innerHTML = financingLeads.map(lead => `<tr><td><div class="lead-vehicle"><strong>${escapeHTML(lead.vehicle_title)}</strong><small>${money.format(lead.vehicle_price)} • ${escapeHTML(lead.vehicle_id || "")}</small></div></td><td>${escapeHTML(formatCPF(lead.cpf))}</td><td>${lead.birth_date ? new Date(`${lead.birth_date}T00:00:00`).toLocaleDateString("pt-BR") : "—"}</td><td>${lead.has_cnh ? "Sim" : "Não"}</td><td><a href="https://wa.me/55${escapeHTML(lead.phone)}" target="_blank" rel="noopener">${escapeHTML(formatPhone(lead.phone))}</a></td><td>${lead.created_at ? dateTime.format(new Date(lead.created_at)) : "—"}</td><td><select class="lead-status-select" data-lead-status="${escapeHTML(lead.id)}">${Object.entries(leadStatusLabels).map(([value,label]) => `<option value="${value}" ${lead.status === value ? "selected" : ""}>${label}</option>`).join("")}</select></td></tr>`).join("");
-  $("#lead-empty").hidden = financingLeads.length > 0;
+  const query = ($("#lead-search")?.value || "").toLowerCase().replace(/\D/g, "");
+  const rawQuery = ($("#lead-search")?.value || "").toLowerCase();
+  const status = $("#lead-status-filter")?.value || "";
+  const filtered = financingLeads.filter(lead => {
+    const text = `${lead.vehicle_title || ""} ${lead.vehicle_id || ""}`.toLowerCase();
+    const digits = `${lead.cpf || ""} ${lead.phone || ""}`.replace(/\D/g, "");
+    return (!status || lead.status === status) && (!rawQuery || text.includes(rawQuery) || digits.includes(query));
+  });
+  $("#lead-list").innerHTML = filtered.map(lead => `<tr><td><div class="lead-vehicle"><strong>${escapeHTML(lead.vehicle_title)}</strong><small>${money.format(lead.vehicle_price)} • ${escapeHTML(lead.vehicle_id || "")}</small></div></td><td>${escapeHTML(formatCPF(lead.cpf))}</td><td>${lead.birth_date ? new Date(`${lead.birth_date}T00:00:00`).toLocaleDateString("pt-BR") : "—"}</td><td>${lead.has_cnh ? "Sim" : "Não"}</td><td><a href="https://wa.me/55${escapeHTML(lead.phone)}" target="_blank" rel="noopener">${escapeHTML(formatPhone(lead.phone))}</a></td><td>${lead.created_at ? dateTime.format(new Date(lead.created_at)) : "—"}</td><td><select class="lead-status-select" data-lead-status="${escapeHTML(lead.id)}">${Object.entries(leadStatusLabels).map(([value,label]) => `<option value="${value}" ${lead.status === value ? "selected" : ""}>${label}</option>`).join("")}</select></td></tr>`).join("");
+  $("#lead-empty").hidden = filtered.length > 0;
   [["new","novo"],["contacting","em_atendimento"],["finished","finalizado"]].forEach(([elementId,statusName]) => $(`#lead-${elementId}`).textContent = financingLeads.filter(lead => lead.status === statusName).length);
 }
 
@@ -75,6 +83,7 @@ document.querySelectorAll("[data-view]").forEach(button => button.addEventListen
 $("#refresh-leads").addEventListener("click", loadFinancingLeads);
 $("#new-vehicle").addEventListener("click", () => openForm());
 ["#admin-search", "#admin-status"].forEach(selector => $(selector).addEventListener("input", render));
+["#lead-search", "#lead-status-filter"].forEach(selector => $(selector).addEventListener("input", renderFinancingLeads));
 $("#admin-list").addEventListener("click", event => { const edit = event.target.closest("[data-edit]"); const remove = event.target.closest("[data-delete]"); if (edit) openForm(vehicles.find(v => String(v.id) === edit.dataset.edit)); if (remove) { deletingId = remove.dataset.delete; $("#delete-modal").showModal(); } });
 $("#lead-list").addEventListener("change", async event => {
   const select = event.target.closest("[data-lead-status]"); if (!select) return;

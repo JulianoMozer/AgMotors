@@ -38,6 +38,19 @@ function formatPhone(value) {
   return digits.replace(/^(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d{4})$/, "$1-$2");
 }
 
+function formatDateBR(value) {
+  return digitsOnly(value).slice(0, 8).replace(/^(\d{2})(\d)/, "$1/$2").replace(/^(\d{2})\/(\d{2})(\d)/, "$1/$2/$3");
+}
+
+function dateBRToISO(value) {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+  if (!match) return "";
+  const [, day, month, year] = match;
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  const valid = date.getFullYear() === Number(year) && date.getMonth() === Number(month) - 1 && date.getDate() === Number(day);
+  return valid ? `${year}-${month}-${day}` : "";
+}
+
 function setFinanceLeadState(state = "form") {
   const form = $("#finance-lead-form");
   const success = $("#finance-lead-success");
@@ -174,8 +187,10 @@ async function submitFinanceLead(event) {
   if (!currentLeadVehicle || !event.currentTarget.reportValidity()) return;
   const cpf = digitsOnly($("#lead-cpf").value);
   const phone = digitsOnly($("#lead-phone").value);
+  const birthDate = dateBRToISO($("#lead-birth-date").value);
   const submitButton = event.currentTarget.querySelector('button[type="submit"]');
   if (cpf.length !== 11) { $("#finance-lead-message").textContent = "Informe um CPF válido."; return; }
+  if (!birthDate) { $("#finance-lead-message").textContent = "Informe a data de nascimento no formato dd/mm/aaaa."; return; }
   if (phone.length < 10) { $("#finance-lead-message").textContent = "Informe um celular válido."; return; }
   $("#finance-lead-message").textContent = "Enviando solicitação...";
   if (submitButton) submitButton.disabled = true;
@@ -185,7 +200,7 @@ async function submitFinanceLead(event) {
       vehicle_title: `${currentLeadVehicle.brand} ${currentLeadVehicle.model}`,
       vehicle_price: Number(currentLeadVehicle.price) || 0,
       cpf,
-      birth_date: $("#lead-birth-date").value,
+      birth_date: birthDate,
       has_cnh: event.currentTarget.elements.has_cnh.value === "true",
       phone
     });
@@ -286,6 +301,7 @@ $("#finance-form").addEventListener("submit", event => { event.preventDefault();
 $("#sell-form").addEventListener("submit", event => { event.preventDefault(); if (!event.currentTarget.reportValidity()) return; const text = encodeURIComponent(`Olá! Quero avaliar meu carro.\n\nNome: ${$("#sell-name").value}\nWhatsApp: ${$("#sell-phone").value}\nVeículo: ${$("#sell-brand").value} ${$("#sell-model").value}\nAno: ${$("#sell-year").value}\nQuilometragem: ${$("#sell-mileage").value}\nObservações: ${$("#sell-notes").value || "Não informado"}`); window.open(`https://wa.me/5541996155327?text=${text}`, "_blank", "noopener"); });
 $("#sell-phone").addEventListener("input", event => { const digits = event.target.value.replace(/\D/g, "").slice(0, 11); event.target.value = digits.replace(/^(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d{4})$/, "$1-$2"); });
 $("#lead-cpf").addEventListener("input", event => { event.target.value = formatCPF(event.target.value); });
+$("#lead-birth-date").addEventListener("input", event => { event.target.value = formatDateBR(event.target.value); });
 $("#lead-phone").addEventListener("input", event => { event.target.value = formatPhone(event.target.value); });
 $("#finance-lead-form").addEventListener("submit", submitFinanceLead);
 $(".finance-lead-close").addEventListener("click", () => $("#finance-lead-modal").close());
