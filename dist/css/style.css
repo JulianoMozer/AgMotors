@@ -116,5 +116,35 @@ html{scroll-padding-top:96px}.button,.nav-cta,.card-link,.card-whatsapp,.price-b
 @media(max-width:1050px){.main-nav>a{font-size:.84rem}}
 @media(max-width:560px){.main-nav>a,.filters input,.filters select,.price-buttons button{font-size:.95rem}.vehicle-title h3{font-size:1.1rem}.vehicle-specs span{font-size:.7rem}.vehicle-specs strong{font-size:.82rem}.vehicle-benefits li{font-size:.78rem}.card-link,.card-whatsapp{font-size:.84rem}.detail-copy dd{font-size:.92rem}.footer-grid>div:not(:first-child){font-size:.92rem}}
 
+/* Cards com hierarquia visual mais focada no veículo */
+.vehicle-card{background:#fff;color:var(--navy);border:1px solid #dbe2ec;box-shadow:0 18px 42px rgba(11,18,32,.1)}
+.vehicle-card::before{inset:0 30px auto;height:3px;background:linear-gradient(90deg,var(--accent),rgba(245,158,11,.28))}
+.vehicle-card:hover{box-shadow:0 24px 60px rgba(11,18,32,.16);border-color:#cfd8e6}
+.vehicle-cover{aspect-ratio:16/11;padding:7px;background:linear-gradient(145deg,#eef2f6,#fff);border-bottom:1px solid #e8edf3}
+.vehicle-cover img{object-fit:contain;border-radius:16px}
+.vehicle-body{padding:15px 18px 17px}
+.vehicle-title small{color:var(--accent-dark);font-size:.68rem;letter-spacing:.12em}
+.vehicle-title h3{min-height:0;margin-top:4px;color:var(--navy);font-size:1.08rem;line-height:1.18}
+.vehicle-price{justify-content:flex-start;margin-top:8px;padding:0 0 10px;border-radius:0;background:transparent;border-bottom:1px solid #e3e8f0;color:var(--accent-dark)}
+.vehicle-price span{display:none}
+.vehicle-price strong{font-size:1.1rem;line-height:1}
+.vehicle-specs{grid-template-columns:repeat(3,1fr);gap:0;margin:10px 0 9px;border-radius:0;background:transparent;border-bottom:1px solid #e3e8f0}
+.vehicle-specs li{padding:0 10px 9px;background:transparent}
+.vehicle-specs li:first-child{padding-left:0}
+.vehicle-specs li+li{border-left:1px solid #e3e8f0;padding-left:12px}
+.vehicle-specs span{color:#738197;font-size:.62rem}
+.vehicle-specs strong{color:var(--navy);font-size:.76rem;line-height:1.2}
+.vehicle-benefits{gap:8px;margin:0 0 12px}
+.vehicle-benefits li{padding:0;border:0;color:#40516a;font-size:.72rem;font-weight:700}
+.vehicle-benefits li::before{color:var(--success)}
+.card-actions{gap:10px}
+.card-link{min-height:40px;padding:9px 13px;background:#f7f9fc;color:var(--navy)}
+.card-whatsapp{min-height:40px;background:#e9f7ef;color:#107044;border-color:#d4efdf}
+.card-tags .card-tag,.card-status{padding:5px 9px;font-size:.66rem}
+@media(max-width:560px){.vehicle-cover{aspect-ratio:16/11}.vehicle-body{padding:14px 15px 16px}.vehicle-specs{grid-template-columns:repeat(3,1fr)}.vehicle-specs li:nth-child(3){grid-column:auto;border-top:0;border-left:1px solid #e3e8f0}.vehicle-specs span{font-size:.62rem}.vehicle-specs strong{font-size:.74rem}.vehicle-benefits li{font-size:.72rem}}
+
+/* Modal de financiamento com rolagem confortável no celular */
+@media(max-width:560px){.finance-lead-modal{top:12px;bottom:12px;left:50%;width:calc(100% - 24px);max-height:calc(100dvh - 24px);overflow-y:auto;transform:translateX(-50%);border-radius:22px;-webkit-overflow-scrolling:touch}.finance-lead-card{min-height:auto;padding:24px 20px 26px}.finance-lead-card h2{font-size:1.48rem}.finance-lead-card input{height:46px}.finance-lead-close{position:sticky;top:10px;float:right;margin:0 0 -42px auto}}
+
 /* Páginas institucionais */
 .simple-page{min-height:100vh;background:var(--surface)}.simple-main{padding:80px 0}.prose{max-width:820px;background:#fff;border-radius:var(--radius);padding:50px;box-shadow:var(--shadow)}.prose h1{font-size:clamp(2.2rem,5vw,3.7rem);margin-bottom:25px}.prose h2{font-size:1.4rem;margin:28px 0 8px}.prose p,.prose li{color:var(--muted)}.prose ul{padding-left:20px}.back-link{display:inline-block;margin-bottom:25px;font-weight:800;color:var(--accent-dark)}
