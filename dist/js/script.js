@@ -10,6 +10,10 @@ let currentGallery = [];
 let currentGalleryIndex = 0;
 let currentGalleryTitle = "";
 let currentLeadVehicle = null;
+let stockFeedVehicles = [];
+let stockFeedIndex = 0;
+let stockFeedPhotoIndex = 0;
+let stockFeedTouch = null;
 const whatsappNumber = "5541996155327";
 const whatsappUrl = message => `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 const generalWhatsAppMessage = "Olá, vim pelo site da AG Motors e gostaria de atendimento.";
@@ -98,6 +102,10 @@ function similarVehicleCard(vehicle) {
   return `<article class="similar-card"><button type="button" data-vehicle="${escapeHTML(vehicle.id)}"><img src="${escapeHTML(vehicle.cover)}" alt="${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)}" loading="lazy"><span><small>${escapeHTML(vehicle.brand)}</small><strong>${escapeHTML(vehicle.model)}</strong><em>${money.format(vehicle.price)}</em></span></button></article>`;
 }
 
+function vehicleImages(vehicle) {
+  return [...new Set([vehicle.cover, ...(vehicle.images || [])])].filter(Boolean);
+}
+
 async function loadVehicles() {
   if (database.configured) {
     try { vehicles = (await database.listVehicles()).map(normalizeVehicle); }
@@ -117,6 +125,7 @@ function vehicleCard(vehicle) {
       <img src="${escapeHTML(vehicle.cover)}" alt="${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)}" width="640" height="480" loading="lazy">
       ${badges.length ? `<span class="card-tags">${badges.map(badge => `<span class="card-tag card-tag-${badge.toLowerCase()}">${badge}</span>`).join("")}</span>` : ""}${unavailable ? `<span class="card-status">${vehicle.status === "sold" ? "Vendido" : "Reservado"}</span>` : ""}
     </button>
+    <button class="feed-card-button" type="button" data-feed-vehicle="${escapeHTML(vehicle.id)}" aria-label="Explorar ${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)} no feed">Feed</button>
     <div class="vehicle-body"><div class="vehicle-title"><small>${escapeHTML(vehicle.brand)}</small><h3>${escapeHTML(vehicle.model)}</h3></div>
     <div class="vehicle-price"><span>Preço à vista</span><strong>${money.format(vehicle.price)}</strong></div>
     <ul class="vehicle-specs"><li><span>Ano</span><strong>${vehicle.year}/${vehicle.modelYear || vehicle.year}</strong></li><li><span>Km</span><strong>${vehicle.mileage ? number.format(vehicle.mileage) : "Consulte"}</strong></li><li><span>Câmbio</span><strong>${escapeHTML(vehicle.transmission || "Consulte")}</strong></li></ul>${benefits.length ? `<ul class="vehicle-benefits">${benefits.map(benefit => `<li>${benefit}</li>`).join("")}</ul>` : ""}
@@ -138,6 +147,8 @@ function renderVehicles() {
   $("#vehicle-grid").innerHTML = result.map(vehicleCard).join("");
   $("#vehicle-count").textContent = `${result.length} ${result.length === 1 ? "veículo" : "veículos"}`;
   $("#empty-state").hidden = result.length > 0;
+  const feedButton = $("[data-feed-open]");
+  if (feedButton) feedButton.disabled = result.length === 0;
 }
 
 function populateBrands() {
@@ -148,7 +159,7 @@ function populateBrands() {
 function openVehicle(id) {
   const vehicle = vehicles.find(item => String(item.id) === String(id));
   if (!vehicle) return;
-  const gallery = [...new Set([vehicle.cover, ...vehicle.images])].filter(Boolean);
+  const gallery = vehicleImages(vehicle);
   const message = encodeURIComponent(vehicleWhatsAppMessage(vehicle));
   const title = `${vehicle.brand} ${vehicle.model}`;
   const similar = similarVehicles(vehicle);
@@ -162,6 +173,43 @@ function openVehicle(id) {
   currentGalleryTitle = title;
   if (!$("#vehicle-modal").open) $("#vehicle-modal").showModal();
   history.replaceState(null, "", `#veiculo=${vehicle.slug || vehicle.id}`);
+}
+
+function renderStockFeed() {
+  const vehicle = stockFeedVehicles[stockFeedIndex];
+  if (!vehicle) return;
+  const images = vehicleImages(vehicle);
+  stockFeedPhotoIndex = Math.max(0, Math.min(stockFeedPhotoIndex, images.length - 1));
+  const image = images[stockFeedPhotoIndex] || vehicle.cover;
+  $("#feed-position").textContent = `${stockFeedIndex + 1}/${stockFeedVehicles.length}`;
+  $("#feed-photo-position").textContent = `${stockFeedPhotoIndex + 1}/${Math.max(images.length, 1)}`;
+  $("#feed-card").innerHTML = `<div class="feed-image-wrap"><img src="${escapeHTML(image)}" alt="${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)}"></div><div class="feed-info"><small>${escapeHTML(vehicle.brand)}</small><h2>${escapeHTML(vehicle.model)}</h2><strong>${money.format(vehicle.price)}</strong><ul><li>${vehicle.year}/${vehicle.modelYear || vehicle.year}</li><li>${vehicle.mileage ? `${number.format(vehicle.mileage)} km` : "Km consulte"}</li><li>${escapeHTML(vehicle.transmission || "Câmbio consulte")}</li></ul><div class="feed-actions"><a href="${whatsappUrl(vehicleWhatsAppMessage(vehicle))}" target="_blank" rel="noopener noreferrer">WhatsApp</a><button type="button" data-feed-detail="${escapeHTML(vehicle.id)}">Ver detalhes</button><button type="button" data-finance-lead="${escapeHTML(vehicle.id)}">Pré-análise</button></div></div>`;
+}
+
+function moveStockFeedVehicle(direction) {
+  if (!stockFeedVehicles.length) return;
+  stockFeedIndex = Math.max(0, Math.min(stockFeedIndex + direction, stockFeedVehicles.length - 1));
+  stockFeedPhotoIndex = 0;
+  renderStockFeed();
+}
+
+function moveStockFeedPhoto(direction) {
+  const vehicle = stockFeedVehicles[stockFeedIndex];
+  const images = vehicle ? vehicleImages(vehicle) : [];
+  if (images.length <= 1) return;
+  stockFeedPhotoIndex = (stockFeedPhotoIndex + direction + images.length) % images.length;
+  renderStockFeed();
+}
+
+function openStockFeed(vehicleId = "") {
+  if (!matchMedia("(max-width: 820px)").matches) return;
+  stockFeedVehicles = filteredVehicles();
+  if (!stockFeedVehicles.length) { showToast("Nenhum veículo encontrado para explorar."); return; }
+  stockFeedIndex = Math.max(0, stockFeedVehicles.findIndex(vehicle => String(vehicle.id) === String(vehicleId)));
+  if (stockFeedIndex < 0) stockFeedIndex = 0;
+  stockFeedPhotoIndex = 0;
+  renderStockFeed();
+  $("#stock-feed-modal").showModal();
 }
 
 function openVehicleFromHash() {
@@ -284,9 +332,13 @@ $(".menu-toggle").addEventListener("click", event => {
 document.addEventListener("click", event => {
   const priceButton = event.target.closest("[data-price-min]"); if (priceButton) applyPriceShortcut(priceButton);
   const clearPriceButton = event.target.closest("[data-price-clear]"); if (clearPriceButton) clearPriceShortcut();
+  const feedOpen = event.target.closest("[data-feed-open]"); if (feedOpen) openStockFeed();
+  const feedVehicle = event.target.closest("[data-feed-vehicle]"); if (feedVehicle) openStockFeed(feedVehicle.dataset.feedVehicle);
+  const feedDetail = event.target.closest("[data-feed-detail]"); if (feedDetail) { $("#stock-feed-modal").close(); openVehicle(feedDetail.dataset.feedDetail); }
+  if (event.target.closest("[data-feed-close]")) $("#stock-feed-modal").close();
   const button = event.target.closest("[data-vehicle]"); if (button) openVehicle(button.dataset.vehicle);
   const image = event.target.closest("[data-image]"); if (image) updateDetailImage(image);
-  const financeLead = event.target.closest("[data-finance-lead]"); if (financeLead) openFinanceLead(financeLead.dataset.financeLead);
+  const financeLead = event.target.closest("[data-finance-lead]"); if (financeLead) { if ($("#stock-feed-modal").open) $("#stock-feed-modal").close(); openFinanceLead(financeLead.dataset.financeLead); }
   const mainImage = event.target.closest(".detail-main-button"); if (mainImage) openGalleryLightbox(Number(mainImage.dataset.galleryIndex) || 0);
   const galleryThumb = event.target.closest("[data-gallery-thumb]"); if (galleryThumb) { currentGalleryIndex = Number(galleryThumb.dataset.galleryThumb) || 0; renderGalleryLightbox(); }
   if (event.target.closest("[data-gallery-prev]")) moveGalleryLightbox(-1);
@@ -310,7 +362,28 @@ $("#vehicle-modal").addEventListener("close", () => { if (location.hash.startsWi
 $("#vehicle-modal").addEventListener("click", event => { if (event.target === event.currentTarget) event.currentTarget.close(); });
 $("#finance-lead-modal").addEventListener("click", event => { if (event.target === event.currentTarget) event.currentTarget.close(); });
 $("#gallery-lightbox").addEventListener("click", event => { if (event.target === event.currentTarget) event.currentTarget.close(); });
+$("#stock-feed-modal").addEventListener("click", event => { if (event.target === event.currentTarget) event.currentTarget.close(); });
+$("#stock-feed-modal").addEventListener("pointerdown", event => {
+  if (event.target.closest("a,button")) return;
+  stockFeedTouch = { x: event.clientX, y: event.clientY };
+});
+$("#stock-feed-modal").addEventListener("pointerup", event => {
+  if (!stockFeedTouch || event.target.closest("a,button")) return;
+  const dx = event.clientX - stockFeedTouch.x;
+  const dy = event.clientY - stockFeedTouch.y;
+  stockFeedTouch = null;
+  if (Math.abs(dx) < 45 && Math.abs(dy) < 45) return;
+  if (Math.abs(dx) > Math.abs(dy)) moveStockFeedPhoto(dx < 0 ? 1 : -1);
+  else moveStockFeedVehicle(dy < 0 ? 1 : -1);
+});
 document.addEventListener("keydown", event => {
+  if ($("#stock-feed-modal").open) {
+    if (event.key === "ArrowUp") moveStockFeedVehicle(-1);
+    if (event.key === "ArrowDown") moveStockFeedVehicle(1);
+    if (event.key === "ArrowLeft") moveStockFeedPhoto(-1);
+    if (event.key === "ArrowRight") moveStockFeedPhoto(1);
+    return;
+  }
   if (!$("#gallery-lightbox").open) return;
   if (event.key === "ArrowLeft") moveGalleryLightbox(-1);
   if (event.key === "ArrowRight") moveGalleryLightbox(1);

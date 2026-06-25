@@ -146,5 +146,35 @@ html{scroll-padding-top:96px}.button,.nav-cta,.card-link,.card-whatsapp,.price-b
 /* Modal de financiamento com rolagem confortável no celular */
 @media(max-width:560px){.finance-lead-modal{top:12px;bottom:12px;left:50%;width:calc(100% - 24px);max-height:calc(100dvh - 24px);overflow-y:auto;transform:translateX(-50%);border-radius:22px;-webkit-overflow-scrolling:touch}.finance-lead-card{min-height:auto;padding:24px 20px 26px}.finance-lead-card h2{font-size:1.48rem}.finance-lead-card input{height:46px}.finance-lead-close{position:sticky;top:10px;float:right;margin:0 0 -42px auto}}
 
+/* Modo Feed do Estoque - apenas mobile */
+.feed-open-button,.feed-card-button{display:none}
+.stock-feed-modal{display:none}
+@media(max-width:820px){
+  .feed-open-button{display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;margin:0 0 18px;border:0;border-radius:13px;background:var(--navy);color:#fff;font-weight:900;font-size:.95rem;box-shadow:0 14px 32px rgba(11,18,32,.16)}
+  .feed-open-button::after{content:"↕";margin-left:9px;color:var(--accent)}
+  .feed-open-button:disabled{opacity:.55}
+  .feed-card-button{display:block;position:absolute;z-index:4;right:13px;bottom:calc(42% + 10px);border:1px solid rgba(255,255,255,.72);border-radius:999px;background:rgba(11,18,32,.72);backdrop-filter:blur(8px);color:#fff;padding:7px 10px;font-size:.68rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+  .stock-feed-modal{position:fixed;inset:0;display:block;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;border:0;border-radius:0;padding:0;overflow:hidden;background:#050b14;color:#fff;touch-action:none}
+  .stock-feed-modal::backdrop{background:#050b14}
+  .feed-close,.feed-position,.feed-photo-position{position:absolute;z-index:5}
+  .feed-close{right:14px;top:14px;width:42px;height:42px;border:0;border-radius:50%;background:rgba(255,255,255,.92);color:var(--navy);font-size:1.55rem}
+  .feed-position{left:14px;top:18px;padding:7px 10px;border-radius:999px;background:rgba(5,11,20,.62);font-size:.76rem;font-weight:900}
+  .feed-photo-position{right:14px;top:64px;padding:6px 9px;border-radius:999px;background:rgba(5,11,20,.62);font-size:.7rem;font-weight:900}
+  .feed-card{position:relative;width:100%;height:100%;overflow:hidden;background:#050b14}
+  .feed-image-wrap{position:absolute;inset:0 0 30%;display:grid;place-items:center;background:linear-gradient(180deg,#0c1626,#050b14)}
+  .feed-image-wrap img{width:100%;height:100%;object-fit:contain}
+  .feed-info{position:absolute;left:0;right:0;bottom:0;padding:24px 18px 22px;background:linear-gradient(180deg,rgba(5,11,20,0),rgba(5,11,20,.92) 16%,#050b14 100%)}
+  .feed-info small{display:block;color:var(--accent);font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.12em}
+  .feed-info h2{max-width:92%;margin:5px 0 7px;font-size:1.5rem;line-height:1.05;color:#fff}
+  .feed-info strong{display:block;color:#ffb52f;font-size:1.28rem}
+  .feed-info ul{display:flex;gap:8px;margin:13px 0 16px;padding:0;list-style:none;overflow-x:auto}
+  .feed-info li{flex:0 0 auto;padding:8px 10px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(255,255,255,.06);color:#e6edf6;font-size:.78rem;font-weight:800}
+  .feed-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .feed-actions a,.feed-actions button{min-height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.18);font-size:.82rem;font-weight:900}
+  .feed-actions a{display:grid;place-items:center;background:#21c45d;color:#fff}
+  .feed-actions button{background:#fff;color:var(--navy)}
+  .feed-actions button:last-child{grid-column:1/-1;background:var(--accent);border-color:transparent}
+}
+
 /* Páginas institucionais */
 .simple-page{min-height:100vh;background:var(--surface)}.simple-main{padding:80px 0}.prose{max-width:820px;background:#fff;border-radius:var(--radius);padding:50px;box-shadow:var(--shadow)}.prose h1{font-size:clamp(2.2rem,5vw,3.7rem);margin-bottom:25px}.prose h2{font-size:1.4rem;margin:28px 0 8px}.prose p,.prose li{color:var(--muted)}.prose ul{padding-left:20px}.back-link{display:inline-block;margin-bottom:25px;font-weight:800;color:var(--accent-dark)}
