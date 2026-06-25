@@ -118,6 +118,14 @@
           <label><span class="sr-only">Filtrar por marca</span><select id="brand-filter"><option value="">Todas as marcas</option></select></label>
           <label><span class="sr-only">Ordenar veículos</span><select id="sort-filter"><option value="featured">Destaques</option><option value="price-asc">Menor preço</option><option value="price-desc">Maior preço</option><option value="year-desc">Mais novos</option></select></label>
           <strong id="vehicle-count" aria-live="polite"></strong>
+          <div class="mobile-price-filter" aria-label="Filtrar por faixa de preço">
+            <button type="button" data-price-min="0" data-price-max="20000">Até R$ 20 mil</button>
+            <button type="button" data-price-min="20000" data-price-max="30000">R$ 20 mil a R$ 30 mil</button>
+            <button type="button" data-price-min="30000" data-price-max="50000">R$ 30 mil a R$ 50 mil</button>
+            <button type="button" data-price-min="50000" data-price-max="80000">R$ 50 mil a R$ 80 mil</button>
+            <button type="button" data-price-min="80000">Acima de R$ 80 mil</button>
+            <button class="price-clear" type="button" data-price-clear hidden>Limpar filtro</button>
+          </div>
         </div>
         <button class="feed-open-button" type="button" data-feed-open>Explorar estoque</button>
         <div class="vehicle-grid" id="vehicle-grid" aria-live="polite"></div>
