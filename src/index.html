@@ -119,6 +119,7 @@
           <label><span class="sr-only">Ordenar veículos</span><select id="sort-filter"><option value="featured">Destaques</option><option value="price-asc">Menor preço</option><option value="price-desc">Maior preço</option><option value="year-desc">Mais novos</option></select></label>
           <strong id="vehicle-count" aria-live="polite"></strong>
         </div>
+        <button class="feed-open-button" type="button" data-feed-open>Explorar estoque</button>
         <div class="vehicle-grid" id="vehicle-grid" aria-live="polite"></div>
         <div class="empty-state" id="empty-state" hidden><h3>Nenhum veículo encontrado</h3><p>Tente ajustar os filtros ou fale com nossa equipe.</p></div>
       </div>
@@ -266,6 +267,12 @@
       <p>Nossa equipe realizará uma pré-análise e entrará em contato em breve para informar as melhores opções de financiamento.</p>
       <button class="button button-dark button-full" type="button" data-finance-lead-done>Fechar</button>
     </div>
+  </dialog>
+  <dialog class="stock-feed-modal" id="stock-feed-modal" aria-label="Modo feed do estoque">
+    <button class="feed-close" type="button" data-feed-close aria-label="Fechar feed">×</button>
+    <div class="feed-position" id="feed-position">1/1</div>
+    <div class="feed-photo-position" id="feed-photo-position">1/1</div>
+    <article class="feed-card" id="feed-card"></article>
   </dialog>
   <dialog class="gallery-lightbox" id="gallery-lightbox" aria-label="Galeria de fotos do veículo">
     <button class="gallery-close" type="button" data-gallery-close aria-label="Fechar galeria">×</button>
