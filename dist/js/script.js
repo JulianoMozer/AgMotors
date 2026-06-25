@@ -16,6 +16,8 @@ let stockFeedPhotoIndex = 0;
 let stockFeedTouch = null;
 let stockFeedMoved = false;
 let renderedVehicles = [];
+let stockFeedDetailsOpen = false;
+let stockFeedAnimating = false;
 const whatsappNumber = "5541996155327";
 const whatsappUrl = message => `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 const generalWhatsAppMessage = "Olá, vim pelo site da AG Motors e gostaria de atendimento.";
@@ -108,6 +110,10 @@ function vehicleImages(vehicle) {
   return [...new Set([vehicle.cover, ...(vehicle.images || [])])].filter(Boolean);
 }
 
+function isMobileStockExperience() {
+  return matchMedia("(max-width: 820px)").matches;
+}
+
 async function loadVehicles() {
   if (database.configured) {
     try { vehicles = (await database.listVehicles()).map(normalizeVehicle); }
@@ -189,50 +195,71 @@ function renderStockFeed() {
   const images = vehicleImages(vehicle);
   stockFeedPhotoIndex = Math.max(0, Math.min(stockFeedPhotoIndex, images.length - 1));
   const image = images[stockFeedPhotoIndex] || vehicle.cover;
+  const features = (vehicle.features || []).slice(0, 12);
   $("#feed-position").textContent = `${stockFeedIndex + 1}/${stockFeedVehicles.length}`;
   $("#feed-photo-position").textContent = `${stockFeedPhotoIndex + 1}/${Math.max(images.length, 1)}`;
-  $("#feed-card").innerHTML = `<div class="feed-image-wrap"><img src="${escapeHTML(image)}" alt="${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)}"></div><div class="feed-info"><small>${escapeHTML(vehicle.brand)}</small><h2>${escapeHTML(vehicle.model)}</h2><strong>${money.format(vehicle.price)}</strong><ul><li>${vehicle.year}/${vehicle.modelYear || vehicle.year}</li><li>${vehicle.mileage ? `${number.format(vehicle.mileage)} km` : "Km consulte"}</li><li>${escapeHTML(vehicle.transmission || "Câmbio consulte")}</li></ul><div class="feed-actions"><a href="${whatsappUrl(vehicleWhatsAppMessage(vehicle))}" target="_blank" rel="noopener noreferrer">WhatsApp</a><button type="button" data-feed-detail="${escapeHTML(vehicle.id)}">Ver detalhes</button><button type="button" data-finance-lead="${escapeHTML(vehicle.id)}">Pré-análise</button></div></div>`;
-  const feedImage = $(".feed-image-wrap");
-  if (feedImage) {
-    feedImage.dataset.feedDetail = String(vehicle.id);
-    feedImage.setAttribute("role", "button");
-    feedImage.setAttribute("tabindex", "0");
-    feedImage.setAttribute("aria-label", `Abrir detalhes de ${vehicle.brand} ${vehicle.model}`);
-  }
+  $("#feed-card").classList.toggle("is-expanded", stockFeedDetailsOpen);
+  $("#feed-card").innerHTML = `<div class="feed-image-wrap"><img src="${escapeHTML(image)}" alt="${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)}"></div><div class="feed-info"><small>${escapeHTML(vehicle.brand)}</small><h2>${escapeHTML(vehicle.model)}</h2><strong>${money.format(vehicle.price)}</strong><ul><li>${vehicle.year}/${vehicle.modelYear || vehicle.year}</li><li>${vehicle.mileage ? `${number.format(vehicle.mileage)} km` : "Km consulte"}</li><li>${escapeHTML(vehicle.transmission || "Câmbio consulte")}</li></ul><div class="feed-actions"><a href="${whatsappUrl(vehicleWhatsAppMessage(vehicle))}" target="_blank" rel="noopener noreferrer">WhatsApp</a><button type="button" data-feed-more>${stockFeedDetailsOpen ? "Ocultar detalhes" : "Ver detalhes"}</button><button type="button" data-finance-lead="${escapeHTML(vehicle.id)}">Pré-análise</button></div><div class="feed-detail-sheet" ${stockFeedDetailsOpen ? "" : "hidden"}><p>${escapeHTML(vehicle.description || "Fale com nossa equipe para conhecer todos os detalhes deste veículo.")}</p>${features.length ? `<div>${features.map(feature => `<span>${escapeHTML(feature)}</span>`).join("")}</div>` : ""}</div></div>`;
+}
+
+function transitionStockFeed(kind, update) {
+  if (stockFeedAnimating) return;
+  const card = $("#feed-card");
+  stockFeedAnimating = true;
+  card.dataset.transition = `${kind}-out`;
+  setTimeout(() => {
+    update();
+    card.dataset.transition = kind;
+    renderStockFeed();
+    setTimeout(() => { stockFeedAnimating = false; }, 280);
+  }, 120);
 }
 
 function moveStockFeedVehicle(direction) {
   if (!stockFeedVehicles.length) return;
-  stockFeedIndex = Math.max(0, Math.min(stockFeedIndex + direction, stockFeedVehicles.length - 1));
-  stockFeedPhotoIndex = 0;
-  renderStockFeed();
+  const nextIndex = Math.max(0, Math.min(stockFeedIndex + direction, stockFeedVehicles.length - 1));
+  if (nextIndex === stockFeedIndex) return;
+  transitionStockFeed(direction > 0 ? "vehicle-next" : "vehicle-prev", () => {
+    stockFeedIndex = nextIndex;
+    stockFeedPhotoIndex = 0;
+    stockFeedDetailsOpen = false;
+  });
 }
 
 function moveStockFeedPhoto(direction) {
   const vehicle = stockFeedVehicles[stockFeedIndex];
   const images = vehicle ? vehicleImages(vehicle) : [];
   if (images.length <= 1) return;
-  stockFeedPhotoIndex = (stockFeedPhotoIndex + direction + images.length) % images.length;
-  renderStockFeed();
+  transitionStockFeed(direction > 0 ? "photo-next" : "photo-prev", () => {
+    stockFeedPhotoIndex = (stockFeedPhotoIndex + direction + images.length) % images.length;
+  });
 }
 
 function openStockFeed(vehicleId = "") {
-  if (!matchMedia("(max-width: 820px)").matches) return;
+  if (!isMobileStockExperience()) return;
   stockFeedVehicles = renderedVehicles.length ? [...renderedVehicles] : filteredVehicles();
   if (!stockFeedVehicles.length) { showToast("Nenhum veículo encontrado para explorar."); return; }
   stockFeedIndex = Math.max(0, stockFeedVehicles.findIndex(vehicle => String(vehicle.id) === String(vehicleId)));
   if (stockFeedIndex < 0) stockFeedIndex = 0;
   stockFeedPhotoIndex = 0;
   stockFeedMoved = false;
+  stockFeedDetailsOpen = false;
+  $("#feed-card").dataset.transition = "open";
   renderStockFeed();
-  $("#stock-feed-modal").showModal();
+  if ($("#vehicle-modal").open) $("#vehicle-modal").close();
+  if (!$("#stock-feed-modal").open) $("#stock-feed-modal").showModal();
+}
+
+function openVehicleEntry(vehicleId) {
+  if (isMobileStockExperience()) openStockFeed(vehicleId);
+  else openVehicle(vehicleId);
 }
 
 function openVehicleFromHash() {
   if (!location.hash.startsWith("#veiculo=")) return;
   const slug = decodeURIComponent(location.hash.split("=")[1]);
   const vehicle = vehicles.find(item => item.slug === slug || String(item.id) === slug);
-  if (vehicle) openVehicle(vehicle.id);
+  if (vehicle) openVehicleEntry(vehicle.id);
 }
 
 function openFinanceLead(vehicleId) {
@@ -296,18 +323,17 @@ function showToast(message) {
 
 function applyPriceShortcut(button) {
   activePriceRange = { min: Number(button.dataset.priceMin) || 0, max: button.dataset.priceMax ? Number(button.dataset.priceMax) : null };
-  document.querySelectorAll("[data-price-min]").forEach(item => item.classList.toggle("is-active", item === button));
-  const clearButton = $("[data-price-clear]");
-  if (clearButton) clearButton.hidden = false;
+  document.querySelectorAll("[data-price-min]").forEach(item => item.classList.toggle("is-active", item.dataset.priceMin === button.dataset.priceMin && item.dataset.priceMax === button.dataset.priceMax));
+  document.querySelectorAll("[data-price-clear]").forEach(item => { item.hidden = false; });
   renderVehicles();
-  $("#estoque").scrollIntoView({ behavior: "smooth", block: "start" });
+  if (isMobileStockExperience()) openStockFeed();
+  else $("#estoque").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function clearPriceShortcut() {
   activePriceRange = null;
   document.querySelectorAll("[data-price-min]").forEach(item => item.classList.remove("is-active"));
-  const clearButton = $("[data-price-clear]");
-  if (clearButton) clearButton.hidden = true;
+  document.querySelectorAll("[data-price-clear]").forEach(item => { item.hidden = true; });
   renderVehicles();
 }
 
@@ -350,9 +376,10 @@ document.addEventListener("click", event => {
   const clearPriceButton = event.target.closest("[data-price-clear]"); if (clearPriceButton) clearPriceShortcut();
   const feedOpen = event.target.closest("[data-feed-open]"); if (feedOpen) openStockFeed();
   const feedVehicle = event.target.closest("[data-feed-vehicle]"); if (feedVehicle) openStockFeed(feedVehicle.dataset.feedVehicle);
-  const feedDetail = event.target.closest("[data-feed-detail]"); if (feedDetail) { if (stockFeedMoved) return; $("#stock-feed-modal").close(); openVehicle(feedDetail.dataset.feedDetail); }
+  const feedMore = event.target.closest("[data-feed-more]"); if (feedMore) { stockFeedDetailsOpen = !stockFeedDetailsOpen; $("#feed-card").dataset.transition = "details"; renderStockFeed(); }
+  const feedDetail = event.target.closest("[data-feed-detail]"); if (feedDetail) { if (stockFeedMoved) return; $("#stock-feed-modal").close(); openVehicleEntry(feedDetail.dataset.feedDetail); }
   if (event.target.closest("[data-feed-close]")) $("#stock-feed-modal").close();
-  const button = event.target.closest("[data-vehicle]"); if (button) openVehicle(button.dataset.vehicle);
+  const button = event.target.closest("[data-vehicle]"); if (button) openVehicleEntry(button.dataset.vehicle);
   const image = event.target.closest("[data-image]"); if (image) updateDetailImage(image);
   const financeLead = event.target.closest("[data-finance-lead]"); if (financeLead) { if ($("#stock-feed-modal").open) $("#stock-feed-modal").close(); openFinanceLead(financeLead.dataset.financeLead); }
   const mainImage = event.target.closest(".detail-main-button"); if (mainImage) openGalleryLightbox(Number(mainImage.dataset.galleryIndex) || 0);
