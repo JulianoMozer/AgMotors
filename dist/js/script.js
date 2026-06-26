@@ -18,6 +18,7 @@ let stockFeedMoved = false;
 let renderedVehicles = [];
 let stockFeedDetailsOpen = false;
 let stockFeedAnimating = false;
+let inventoryExpanded = false;
 const whatsappNumber = "5541996155327";
 const whatsappUrl = message => `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 const generalWhatsAppMessage = "Olá, vim pelo site da AG Motors e gostaria de atendimento.";
@@ -153,11 +154,19 @@ function filteredVehicles() {
 function renderVehicles() {
   const result = filteredVehicles();
   renderedVehicles = result;
-  $("#vehicle-grid").innerHTML = result.map(vehicleCard).join("");
+  const grid = $("#vehicle-grid");
+  grid.innerHTML = result.map(vehicleCard).join("");
+  grid.classList.toggle("is-expanded", inventoryExpanded);
   $("#vehicle-count").textContent = `${result.length} ${result.length === 1 ? "veículo" : "veículos"}`;
   $("#empty-state").hidden = result.length > 0;
   const feedButton = $("[data-feed-open]");
   if (feedButton) feedButton.disabled = result.length === 0;
+  const expandButton = $("[data-inventory-expand]");
+  if (expandButton) {
+    const sampleSize = matchMedia("(max-width: 1050px)").matches ? 2 : 3;
+    expandButton.hidden = isMobileStockExperience() || result.length <= sampleSize;
+    expandButton.textContent = inventoryExpanded ? "Mostrar menos veículos" : `Ver todos os ${result.length} veículos`;
+  }
 }
 
 function populateBrands() {
@@ -190,7 +199,7 @@ function stockFeedSlideMarkup(vehicle, extraClass = "") {
   const image = images[stockFeedPhotoIndex] || vehicle.cover;
   const features = (vehicle.features || []).slice(0, 12);
   return `<div class="feed-slide ${extraClass}" data-feed-slide>
-    <div class="feed-image-wrap"><img src="${escapeHTML(image)}" alt="${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)}" decoding="async"></div>
+    <div class="feed-image-wrap"><img class="feed-image-backdrop" src="${escapeHTML(image)}" alt="" aria-hidden="true"><img class="feed-image-main" src="${escapeHTML(image)}" alt="${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)}" decoding="async"></div>
     <div class="feed-info">
       <small>${escapeHTML(vehicle.brand)}</small>
       <h2>${escapeHTML(vehicle.model)}</h2>
@@ -269,12 +278,13 @@ function transitionStockFeedPhoto(direction, nextIndex) {
   const vehicle = stockFeedVehicles[stockFeedIndex];
   const images = vehicle ? vehicleImages(vehicle) : [];
   const wrap = $(".feed-image-wrap", $("#feed-card"));
-  const outgoing = wrap?.querySelector("img:last-of-type");
+  const outgoing = wrap?.querySelector(".feed-image-main");
   if (!wrap || !outgoing || !images[nextIndex]) return;
   $("#feed-card").removeAttribute("data-transition");
   stockFeedAnimating = true;
   stockFeedPhotoIndex = nextIndex;
   const incoming = document.createElement("img");
+  incoming.className = "feed-image-main";
   incoming.src = images[nextIndex];
   incoming.alt = `${vehicle.brand} ${vehicle.model}`;
   incoming.decoding = "async";
@@ -288,6 +298,8 @@ function transitionStockFeedPhoto(direction, nextIndex) {
   updateStockFeedIndicators();
   preloadStockFeedNeighbors();
   setTimeout(() => {
+    const backdrop = $(".feed-image-backdrop", wrap);
+    if (backdrop) backdrop.src = images[nextIndex];
     outgoing.remove();
     incoming.classList.remove(enteringClass);
     stockFeedAnimating = false;
@@ -449,6 +461,7 @@ document.addEventListener("click", event => {
   const priceButton = event.target.closest("[data-price-min]"); if (priceButton) applyPriceShortcut(priceButton);
   const clearPriceButton = event.target.closest("[data-price-clear]"); if (clearPriceButton) clearPriceShortcut();
   const feedOpen = event.target.closest("[data-feed-open]"); if (feedOpen) openStockFeed();
+  const inventoryExpand = event.target.closest("[data-inventory-expand]"); if (inventoryExpand) { inventoryExpanded = !inventoryExpanded; renderVehicles(); }
   const feedVehicle = event.target.closest("[data-feed-vehicle]"); if (feedVehicle) openStockFeed(feedVehicle.dataset.feedVehicle);
   const feedMore = event.target.closest("[data-feed-more]"); if (feedMore) { stockFeedDetailsOpen = !stockFeedDetailsOpen; $("#feed-card").dataset.transition = "details"; renderStockFeed(); }
   const feedDetail = event.target.closest("[data-feed-detail]"); if (feedDetail) { if (stockFeedMoved) return; $("#stock-feed-modal").close(); openVehicleEntry(feedDetail.dataset.feedDetail); }
@@ -495,7 +508,7 @@ $("#stock-feed-modal").addEventListener("pointermove", event => {
   if (!stockFeedTouch.axis) return;
   event.preventDefault();
   if (stockFeedTouch.axis === "x") {
-    const image = $(".feed-image-wrap img:last-of-type", $("#feed-card"));
+    const image = $(".feed-image-main", $("#feed-card"));
     if (image) {
       image.style.transition = "none";
       image.style.transform = `translateX(${Math.max(-110, Math.min(dx, 110))}px)`;
@@ -515,7 +528,7 @@ $("#stock-feed-modal").addEventListener("pointerup", event => {
   const axis = stockFeedTouch.axis || (Math.abs(dx) > Math.abs(dy) ? "x" : "y");
   stockFeedTouch = null;
   if (event.currentTarget.hasPointerCapture?.(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-  const dragged = axis === "x" ? $(".feed-image-wrap img:last-of-type", $("#feed-card")) : $("[data-feed-slide]", $("#feed-card"));
+  const dragged = axis === "x" ? $(".feed-image-main", $("#feed-card")) : $("[data-feed-slide]", $("#feed-card"));
   if (dragged) {
     dragged.style.transition = "transform .18s ease";
     dragged.style.transform = "";
@@ -533,7 +546,7 @@ $("#stock-feed-modal").addEventListener("pointercancel", event => {
   if (!stockFeedTouch || stockFeedTouch.pointerId !== event.pointerId) return;
   stockFeedTouch = null;
   const slide = $("[data-feed-slide]", $("#feed-card"));
-  const image = $(".feed-image-wrap img:last-of-type", $("#feed-card"));
+  const image = $(".feed-image-main", $("#feed-card"));
   [slide, image].forEach(element => {
     if (!element) return;
     element.style.transition = "transform .18s ease";
