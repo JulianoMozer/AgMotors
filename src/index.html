@@ -40,25 +40,25 @@
         <a href="#estoque">Estoque</a>
         <a href="#financiamento">Financiamento</a>
         <a href="#venda-seu-carro">Venda seu carro</a>
-        <a href="#sobre">A loja</a>
+        <a href="#contato">Contato</a>
         <a class="nav-cta" href="https://wa.me/5541996155327?text=Ol%C3%A1%2C%20vim%20pelo%20site%20da%20AG%20Motors%20e%20gostaria%20de%20atendimento." target="_blank" rel="noopener noreferrer">Falar no WhatsApp</a>
       </nav>
     </div>
   </header>
 
   <main id="conteudo">
-    <section class="hero">
+    <section class="hero home-screen" aria-labelledby="hero-title">
       <div class="container hero-grid">
         <div class="hero-copy">
-          <span class="eyebrow">Seu próximo carro está aqui</span>
-          <h1>Escolhas seguras.<br><em>Novos caminhos.</em></h1>
-          <p>Seminovos selecionados, atendimento transparente e as melhores possibilidades para você comprar, financiar ou trocar.</p>
+          <span class="eyebrow">AG Motors Curitiba</span>
+          <h1 id="hero-title">Escolhas seguras.<br><em>Novos caminhos.</em></h1>
+          <p>Loja física, estoque próprio e atendimento direto para você comprar, vender, trocar ou financiar com confiança.</p>
           <div class="hero-actions">
-            <a class="button button-primary" href="#estoque">Ver veículos</a>
+            <a class="button button-primary" href="#estoque">Explorar estoque</a>
             <a class="button button-ghost" href="#venda-seu-carro">Avaliar meu carro</a>
           </div>
           <ul class="trust-list" aria-label="Diferenciais">
-            <li>Procedência</li><li>Negociação transparente</li><li>Atendimento próximo</li>
+            <li>Veículos selecionados</li><li>Negociação transparente</li><li>Atendimento próximo</li>
           </ul>
         </div>
         <div class="hero-visual">
@@ -66,9 +66,6 @@
           <div class="hero-badge"><strong>Multimarcas</strong><span>Veículos para todos os momentos</span></div>
         </div>
       </div>
-    </section>
-
-    <section class="authority-strip" aria-label="Diferenciais da AG Motors">
       <div class="container authority-grid">
         <article class="authority-card">
           <span class="authority-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 13.5 5.6 7h12.8l2.6 6.5M5 13.5h14v5H5zM7.5 18.5v2M16.5 18.5v2M6.5 13.5l1-3h9l1 3"/></svg></span>
@@ -89,36 +86,19 @@
       </div>
     </section>
 
-    <section class="price-shortcuts" aria-labelledby="price-shortcuts-title">
-      <div class="container price-shortcuts-grid">
-        <div class="price-shortcuts-copy">
-          <span class="eyebrow">Busca rápida</span>
-          <h2 id="price-shortcuts-title">Escolha por faixa de preço</h2>
-          <p>Vá direto aos veículos dentro do orçamento que faz sentido para você.</p>
-        </div>
-        <div class="price-buttons" role="list" aria-label="Filtrar estoque por faixa de preço">
-          <button type="button" data-price-min="0" data-price-max="20000">Até R$ 20 mil</button>
-          <button type="button" data-price-min="20000" data-price-max="30000">R$ 20 mil a R$ 30 mil</button>
-          <button type="button" data-price-min="30000" data-price-max="50000">R$ 30 mil a R$ 50 mil</button>
-          <button type="button" data-price-min="50000" data-price-max="80000">R$ 50 mil a R$ 80 mil</button>
-          <button type="button" data-price-min="80000">Acima de R$ 80 mil</button>
-          <button class="price-clear" type="button" data-price-clear hidden>Limpar filtro</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="section inventory" id="estoque">
+    <section class="section inventory home-screen" id="estoque" aria-labelledby="inventory-title">
       <div class="container">
         <div class="section-heading split-heading">
-          <div><span class="eyebrow">Estoque atualizado</span><h2>Encontre o carro que combina com você</h2></div>
-          <p>Confira os detalhes, simule seu financiamento e fale diretamente com nossa equipe.</p>
+          <div><span class="eyebrow">A tela principal</span><h2 id="inventory-title">Escolha, filtre e explore.</h2></div>
+          <p>Entre direto no estoque ou use os filtros para encontrar o veículo ideal para você.</p>
         </div>
         <div class="filters" aria-label="Filtros do estoque">
           <label class="search-field"><span class="sr-only">Buscar veículo</span><input id="vehicle-search" type="search" placeholder="Busque por marca ou modelo"><span aria-hidden="true">⌕</span></label>
           <label><span class="sr-only">Filtrar por marca</span><select id="brand-filter"><option value="">Todas as marcas</option></select></label>
           <label><span class="sr-only">Ordenar veículos</span><select id="sort-filter"><option value="featured">Destaques</option><option value="price-asc">Menor preço</option><option value="price-desc">Maior preço</option><option value="year-desc">Mais novos</option></select></label>
           <strong id="vehicle-count" aria-live="polite"></strong>
-          <div class="mobile-price-filter" aria-label="Filtrar por faixa de preço">
+          <div class="inventory-price-filter" aria-label="Filtrar por faixa de preço">
+            <span>Faixa de preço</span>
             <button type="button" data-price-min="0" data-price-max="20000">Até R$ 20 mil</button>
             <button type="button" data-price-min="20000" data-price-max="30000">R$ 20 mil a R$ 30 mil</button>
             <button type="button" data-price-min="30000" data-price-max="50000">R$ 30 mil a R$ 50 mil</button>
@@ -127,13 +107,13 @@
             <button class="price-clear" type="button" data-price-clear hidden>Limpar filtro</button>
           </div>
         </div>
-        <button class="feed-open-button" type="button" data-feed-open>Explorar estoque</button>
+        <button class="feed-open-button" type="button" data-feed-open>Explorar estoque em tela cheia</button>
         <div class="vehicle-grid" id="vehicle-grid" aria-live="polite"></div>
         <div class="empty-state" id="empty-state" hidden><h3>Nenhum veículo encontrado</h3><p>Tente ajustar os filtros ou fale com nossa equipe.</p></div>
       </div>
     </section>
 
-    <section class="section finance" id="financiamento">
+    <section class="section finance home-screen" id="financiamento">
       <div class="container finance-grid">
         <div class="finance-copy">
           <span class="eyebrow eyebrow-light">Financiamento</span>
@@ -153,7 +133,7 @@
       </div>
     </section>
 
-    <section class="section sell" id="venda-seu-carro">
+    <section class="section sell home-screen" id="venda-seu-carro">
       <div class="container sell-grid">
         <div class="sell-copy">
           <span class="eyebrow">Venda ou use na troca</span>
@@ -173,39 +153,24 @@
       </div>
     </section>
 
-    <section class="section structure" id="sobre">
-      <div class="container structure-grid">
-        <div class="structure-visual">
-          <img src="img/showroom-ag-motors.jpg" alt="Interior da loja AG Motors Curitiba com veículos em exposição" width="1600" height="1200" loading="lazy">
-          <div class="structure-seal"><strong>Loja física</strong><span>Curitiba • PR</span></div>
-        </div>
-        <div class="structure-copy">
-          <span class="eyebrow">Conheça nossa estrutura</span>
-          <h2>Estoque real.<br>Atendimento próximo.</h2>
-          <p>Loja física em Curitiba, com veículos selecionados e atendimento direto para compra, venda, troca e financiamento.</p>
-          <ul class="structure-highlights" aria-label="Diferenciais da AG Motors">
-            <li>Veículos selecionados</li>
-            <li>Negociação presencial</li>
-            <li>Equipe pronta para atender</li>
-          </ul>
-          <div class="structure-actions">
-            <a class="button button-primary" href="#estoque">Ver estoque</a>
-            <a class="button button-light" href="https://wa.me/5541996155327?text=Ol%C3%A1%2C%20vim%20pelo%20site%20da%20AG%20Motors%20e%20gostaria%20de%20atendimento." target="_blank" rel="noopener noreferrer">Falar no WhatsApp</a>
-            <a class="structure-map-link" href="https://www.google.com/maps/search/?api=1&amp;query=AG+Motors+Multimarcas+Curitiba" target="_blank" rel="noopener noreferrer">Como chegar <span aria-hidden="true">↗</span></a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="location" id="contato">
-      <div class="container location-grid">
-        <div><span class="eyebrow">Venha nos visitar</span><h2>Estamos em Curitiba</h2><p>Veja nossa localização no mapa e trace sua rota até a loja.</p><a class="text-link" href="https://www.google.com/maps/search/?api=1&query=AG+Motors+Multimarcas+Curitiba" target="_blank" rel="noopener noreferrer">Abrir rota no Google Maps →</a></div>
-        <iframe title="Localização da AG Motors Multimarcas em Curitiba" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3601.557807234168!2d-49.33793252385578!3d-25.48643693512857!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94dce3002cd42a79%3A0x94c2c48baf93a270!2sAG%20Motors%20Multimarcas!5e0!3m2!1spt-BR!2sbr!4v1753473627300!5m2!1spt-BR!2sbr" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
-      </div>
-    </section>
   </main>
 
-  <footer class="site-footer">
+  <footer class="site-footer home-screen" id="contato">
+    <div class="container footer-contact-card">
+      <div class="footer-location-copy">
+        <span class="eyebrow eyebrow-light">Última parada</span>
+        <h2>Venha conhecer a AG Motors.</h2>
+        <p>Rua Arnaldo Thá, 1257 - Curitiba/PR. Estoque real, atendimento presencial e negociação direta.</p>
+        <div class="footer-location-actions">
+          <a class="button button-primary" href="https://www.google.com/maps/search/?api=1&amp;query=AG+Motors+Multimarcas+Curitiba" target="_blank" rel="noopener noreferrer">Como chegar</a>
+          <a class="button button-light" href="https://wa.me/5541996155327?text=Ol%C3%A1%2C%20vim%20pelo%20site%20da%20AG%20Motors%20e%20gostaria%20de%20atendimento." target="_blank" rel="noopener noreferrer">Falar no WhatsApp</a>
+        </div>
+      </div>
+      <div class="footer-map">
+        <iframe title="Localização da AG Motors Multimarcas em Curitiba" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3601.557807234168!2d-49.33793252385578!3d-25.48643693512857!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94dce3002cd42a79%3A0x94c2c48baf93a270!2sAG%20Motors%20Multimarcas!5e0!3m2!1spt-BR!2sbr!4v1753473627300!5m2!1spt-BR!2sbr" loading="lazy" referrerpolicy="no-referrer-when-downgrade" tabindex="-1"></iframe>
+        <a href="https://www.google.com/maps/search/?api=1&amp;query=AG+Motors+Multimarcas+Curitiba" target="_blank" rel="noopener noreferrer" aria-label="Abrir localização da AG Motors no Google Maps">Abrir no Google Maps ↗</a>
+      </div>
+    </div>
     <div class="container footer-grid">
       <div class="footer-brand-block">
         <a class="brand brand-footer" href="#inicio">
@@ -224,14 +189,15 @@
         <a href="#estoque">Estoque</a>
         <a href="#financiamento">Financiamento</a>
         <a href="#venda-seu-carro">Venda seu carro</a>
-        <a href="#sobre">Conheça a loja</a>
+        <a href="#inicio">Início</a>
       </div>
       <div>
         <strong>Atendimento</strong>
         <a href="tel:+554133438697">(41) 3343-8697</a>
         <a href="https://wa.me/5541996155327">(41) 99615-5327</a>
         <a href="mailto:mozerlogistica@gmail.com">mozerlogistica@gmail.com</a>
-        <span>Segunda a sábado</span>
+        <span>Segunda a sexta, 9h às 18h</span>
+        <span>Sábado, 9h às 16h</span>
       </div>
       <div>
         <strong>Localização</strong>
