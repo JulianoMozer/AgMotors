@@ -494,9 +494,10 @@ $("#finance-lead-modal").addEventListener("click", event => { if (event.target =
 $("#gallery-lightbox").addEventListener("click", event => { if (event.target === event.currentTarget) event.currentTarget.close(); });
 $("#stock-feed-modal").addEventListener("click", event => { if (event.target === event.currentTarget) event.currentTarget.close(); });
 const stockFeedInteractiveSelector = "a,button,input,select,textarea,label,[contenteditable],.feed-detail-sheet";
+const stockFeedGesture = { axisLock: 5, distance: 24, flickDistance: 10, flickVelocity: 0.14 };
 $("#stock-feed-modal").addEventListener("pointerdown", event => {
   if (event.target.closest(stockFeedInteractiveSelector) || stockFeedAnimating) return;
-  stockFeedTouch = { x: event.clientX, y: event.clientY, axis: "", pointerId: event.pointerId };
+  stockFeedTouch = { x: event.clientX, y: event.clientY, axis: "", pointerId: event.pointerId, startedAt: performance.now() };
   stockFeedMoved = false;
   event.currentTarget.setPointerCapture?.(event.pointerId);
 });
@@ -504,20 +505,20 @@ $("#stock-feed-modal").addEventListener("pointermove", event => {
   if (!stockFeedTouch || stockFeedTouch.pointerId !== event.pointerId) return;
   const dx = event.clientX - stockFeedTouch.x;
   const dy = event.clientY - stockFeedTouch.y;
-  if (!stockFeedTouch.axis && Math.max(Math.abs(dx), Math.abs(dy)) > 8) stockFeedTouch.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+  if (!stockFeedTouch.axis && Math.max(Math.abs(dx), Math.abs(dy)) > stockFeedGesture.axisLock) stockFeedTouch.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
   if (!stockFeedTouch.axis) return;
   event.preventDefault();
   if (stockFeedTouch.axis === "x") {
     const image = $(".feed-image-main", $("#feed-card"));
     if (image) {
       image.style.transition = "none";
-      image.style.transform = `translateX(${Math.max(-110, Math.min(dx, 110))}px)`;
+      image.style.transform = `translateX(${Math.max(-180, Math.min(dx * 0.92, 180))}px)`;
     }
   } else {
     const slide = $("[data-feed-slide]", $("#feed-card"));
     if (slide) {
       slide.style.transition = "none";
-      slide.style.transform = `translateY(${Math.max(-130, Math.min(dy, 130))}px)`;
+      slide.style.transform = `translateY(${Math.max(-220, Math.min(dy * 0.92, 220))}px)`;
     }
   }
 });
@@ -526,15 +527,19 @@ $("#stock-feed-modal").addEventListener("pointerup", event => {
   const dx = event.clientX - stockFeedTouch.x;
   const dy = event.clientY - stockFeedTouch.y;
   const axis = stockFeedTouch.axis || (Math.abs(dx) > Math.abs(dy) ? "x" : "y");
+  const duration = Math.max(performance.now() - stockFeedTouch.startedAt, 1);
+  const distance = Math.abs(axis === "x" ? dx : dy);
+  const velocity = distance / duration;
+  const shouldNavigate = distance >= stockFeedGesture.distance || (distance >= stockFeedGesture.flickDistance && velocity >= stockFeedGesture.flickVelocity);
   stockFeedTouch = null;
   if (event.currentTarget.hasPointerCapture?.(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   const dragged = axis === "x" ? $(".feed-image-main", $("#feed-card")) : $("[data-feed-slide]", $("#feed-card"));
   if (dragged) {
-    dragged.style.transition = "transform .18s ease";
+    dragged.style.transition = "transform .14s ease";
     dragged.style.transform = "";
   }
-  if (Math.abs(dx) < 45 && Math.abs(dy) < 45) {
-    setTimeout(() => { if (dragged) dragged.style.transition = ""; }, 190);
+  if (!shouldNavigate) {
+    setTimeout(() => { if (dragged) dragged.style.transition = ""; }, 150);
     return;
   }
   stockFeedMoved = true;
@@ -549,9 +554,9 @@ $("#stock-feed-modal").addEventListener("pointercancel", event => {
   const image = $(".feed-image-main", $("#feed-card"));
   [slide, image].forEach(element => {
     if (!element) return;
-    element.style.transition = "transform .18s ease";
+    element.style.transition = "transform .14s ease";
     element.style.transform = "";
-    setTimeout(() => { element.style.transition = ""; }, 190);
+    setTimeout(() => { element.style.transition = ""; }, 150);
   });
 });
 document.addEventListener("keydown", event => {
