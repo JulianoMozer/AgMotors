@@ -20,9 +20,14 @@ let stockFeedDetailsOpen = false;
 let stockFeedAnimating = false;
 let inventoryExpanded = false;
 const whatsappNumber = "5541996155327";
+const siteUrl = "https://www.agmotorscuritiba.com.br";
 const whatsappUrl = message => `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 const generalWhatsAppMessage = "Olá, vim pelo site da AG Motors e gostaria de atendimento.";
-const vehicleWhatsAppMessage = vehicle => `Olá, tenho interesse no ${vehicle.brand} ${vehicle.model} anunciado no site da AG Motors.`;
+const vehiclePath = vehicle => `/veiculo/${encodeURIComponent(vehicle.slug || vehicle.id)}`;
+const vehicleShareUrl = vehicle => `${siteUrl}${vehiclePath(vehicle)}`;
+const vehicleWhatsAppMessage = vehicle => `Olá, tenho interesse no ${vehicle.brand} ${vehicle.model} anunciado no site da AG Motors.\n${vehicleShareUrl(vehicle)}`;
+const initialVehicleToken = requestedVehicleToken();
+let vehicleReturnUrl = initialVehicleToken ? "/" : `${location.pathname}${location.search}${location.hash}`;
 
 function initializeWhatsAppLinks() {
   document.querySelectorAll(`a[href^="https://wa.me/${whatsappNumber}"]`).forEach(link => {
@@ -115,6 +120,28 @@ function isMobileStockExperience() {
   return matchMedia("(max-width: 820px)").matches;
 }
 
+function requestedVehicleToken() {
+  const routeMatch = location.pathname.match(/^\/veiculo\/([^/]+)\/?$/);
+  if (routeMatch) return decodeURIComponent(routeMatch[1]);
+  const queryToken = new URLSearchParams(location.search).get("veiculo");
+  if (queryToken) return queryToken;
+  if (location.hash.startsWith("#veiculo=")) return decodeURIComponent(location.hash.split("=")[1]);
+  return "";
+}
+
+function prepareVehicleNavigation() {
+  if (!requestedVehicleToken()) vehicleReturnUrl = `${location.pathname}${location.search}${location.hash}`;
+}
+
+function syncVehicleUrl(vehicle) {
+  if (!vehicle) return;
+  history.replaceState({ vehicle: vehicle.slug || vehicle.id }, "", vehiclePath(vehicle));
+}
+
+function restoreVehicleUrl() {
+  history.replaceState(null, "", vehicleReturnUrl || "/");
+}
+
 async function loadVehicles() {
   if (database.configured) {
     try { vehicles = (await database.listVehicles()).map(normalizeVehicle); }
@@ -122,7 +149,7 @@ async function loadVehicles() {
   } else vehicles = fallbackVehicles;
   populateBrands();
   renderVehicles();
-  openVehicleFromHash();
+  openVehicleFromLocation();
 }
 
 function vehicleCard(vehicle) {
@@ -191,7 +218,7 @@ function openVehicle(id) {
   currentGalleryIndex = 0;
   currentGalleryTitle = title;
   if (!$("#vehicle-modal").open) $("#vehicle-modal").showModal();
-  history.replaceState(null, "", `#veiculo=${vehicle.slug || vehicle.id}`);
+  syncVehicleUrl(vehicle);
 }
 
 function stockFeedSlideMarkup(vehicle, extraClass = "") {
@@ -244,6 +271,7 @@ function renderStockFeed() {
   }
   card.classList.toggle("is-expanded", stockFeedDetailsOpen);
   card.innerHTML = stockFeedSlideMarkup(vehicle);
+  syncVehicleUrl(vehicle);
   updateStockFeedIndicators();
   preloadStockFeedNeighbors();
 }
@@ -258,6 +286,7 @@ function transitionStockFeedVehicle(direction, nextIndex) {
   stockFeedIndex = nextIndex;
   stockFeedPhotoIndex = 0;
   stockFeedDetailsOpen = false;
+  syncVehicleUrl(stockFeedVehicles[stockFeedIndex]);
   const leavingClass = direction > 0 ? "is-leaving-up" : "is-leaving-down";
   const enteringClass = direction > 0 ? "is-entering-from-bottom" : "is-entering-from-top";
   outgoing.style.transform = "";
@@ -324,6 +353,7 @@ function moveStockFeedPhoto(direction) {
 
 function openStockFeed(vehicleId = "") {
   if (!isMobileStockExperience()) return;
+  prepareVehicleNavigation();
   stockFeedVehicles = renderedVehicles.length ? [...renderedVehicles] : filteredVehicles();
   if (!stockFeedVehicles.length) { showToast("Nenhum veículo encontrado para explorar."); return; }
   stockFeedIndex = Math.max(0, stockFeedVehicles.findIndex(vehicle => String(vehicle.id) === String(vehicleId)));
@@ -338,13 +368,14 @@ function openStockFeed(vehicleId = "") {
 }
 
 function openVehicleEntry(vehicleId) {
+  prepareVehicleNavigation();
   if (isMobileStockExperience()) openStockFeed(vehicleId);
   else openVehicle(vehicleId);
 }
 
-function openVehicleFromHash() {
-  if (!location.hash.startsWith("#veiculo=")) return;
-  const slug = decodeURIComponent(location.hash.split("=")[1]);
+function openVehicleFromLocation() {
+  const slug = requestedVehicleToken();
+  if (!slug) return;
   const vehicle = vehicles.find(item => item.slug === slug || String(item.id) === slug);
   if (vehicle) openVehicleEntry(vehicle.id);
 }
@@ -497,11 +528,12 @@ $("#lead-phone").addEventListener("input", event => { event.target.value = forma
 $("#finance-lead-form").addEventListener("submit", submitFinanceLead);
 $(".finance-lead-close").addEventListener("click", () => $("#finance-lead-modal").close());
 $(".modal-close").addEventListener("click", () => $("#vehicle-modal").close());
-$("#vehicle-modal").addEventListener("close", () => { if (location.hash.startsWith("#veiculo=")) history.replaceState(null, "", `${location.pathname}${location.search}`); });
+$("#vehicle-modal").addEventListener("close", restoreVehicleUrl);
 $("#vehicle-modal").addEventListener("click", event => { if (event.target === event.currentTarget) event.currentTarget.close(); });
 $("#finance-lead-modal").addEventListener("click", event => { if (event.target === event.currentTarget) event.currentTarget.close(); });
 $("#gallery-lightbox").addEventListener("click", event => { if (event.target === event.currentTarget) event.currentTarget.close(); });
 $("#stock-feed-modal").addEventListener("click", event => { if (event.target === event.currentTarget) event.currentTarget.close(); });
+$("#stock-feed-modal").addEventListener("close", restoreVehicleUrl);
 const stockFeedInteractiveSelector = "a,button,input,select,textarea,label,[contenteditable],.feed-detail-sheet";
 const stockFeedGesture = {
   axisLock: 3,

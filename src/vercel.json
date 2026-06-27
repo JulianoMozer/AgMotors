@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/veiculo/:slug",
+      "destination": "/api/vehicle?slug=:slug"
+    }
+  ]
+}
