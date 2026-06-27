@@ -494,7 +494,15 @@ $("#finance-lead-modal").addEventListener("click", event => { if (event.target =
 $("#gallery-lightbox").addEventListener("click", event => { if (event.target === event.currentTarget) event.currentTarget.close(); });
 $("#stock-feed-modal").addEventListener("click", event => { if (event.target === event.currentTarget) event.currentTarget.close(); });
 const stockFeedInteractiveSelector = "a,button,input,select,textarea,label,[contenteditable],.feed-detail-sheet";
-const stockFeedGesture = { axisLock: 5, distance: 24, flickDistance: 10, flickVelocity: 0.14 };
+const stockFeedGesture = {
+  axisLock: 3,
+  distance: 14,
+  flickDistance: 7,
+  flickVelocity: 0.08,
+  tapMaxDistance: 7,
+  tapMaxDuration: 450,
+  sideZone: 0.45
+};
 $("#stock-feed-modal").addEventListener("pointerdown", event => {
   if (event.target.closest(stockFeedInteractiveSelector) || stockFeedAnimating) return;
   stockFeedTouch = { x: event.clientX, y: event.clientY, axis: "", pointerId: event.pointerId, startedAt: performance.now() };
@@ -512,13 +520,13 @@ $("#stock-feed-modal").addEventListener("pointermove", event => {
     const image = $(".feed-image-main", $("#feed-card"));
     if (image) {
       image.style.transition = "none";
-      image.style.transform = `translateX(${Math.max(-180, Math.min(dx * 0.92, 180))}px)`;
+      image.style.transform = `translateX(${Math.max(-220, Math.min(dx, 220))}px)`;
     }
   } else {
     const slide = $("[data-feed-slide]", $("#feed-card"));
     if (slide) {
       slide.style.transition = "none";
-      slide.style.transform = `translateY(${Math.max(-220, Math.min(dy * 0.92, 220))}px)`;
+      slide.style.transform = `translateY(${Math.max(-260, Math.min(dy, 260))}px)`;
     }
   }
 });
@@ -526,10 +534,12 @@ $("#stock-feed-modal").addEventListener("pointerup", event => {
   if (!stockFeedTouch || stockFeedTouch.pointerId !== event.pointerId) return;
   const dx = event.clientX - stockFeedTouch.x;
   const dy = event.clientY - stockFeedTouch.y;
-  const axis = stockFeedTouch.axis || (Math.abs(dx) > Math.abs(dy) ? "x" : "y");
+  const lockedAxis = stockFeedTouch.axis;
+  const axis = lockedAxis || (Math.abs(dx) > Math.abs(dy) ? "x" : "y");
   const duration = Math.max(performance.now() - stockFeedTouch.startedAt, 1);
   const distance = Math.abs(axis === "x" ? dx : dy);
   const velocity = distance / duration;
+  const isTap = !lockedAxis && Math.max(Math.abs(dx), Math.abs(dy)) <= stockFeedGesture.tapMaxDistance && duration <= stockFeedGesture.tapMaxDuration;
   const shouldNavigate = distance >= stockFeedGesture.distance || (distance >= stockFeedGesture.flickDistance && velocity >= stockFeedGesture.flickVelocity);
   stockFeedTouch = null;
   if (event.currentTarget.hasPointerCapture?.(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
@@ -537,6 +547,18 @@ $("#stock-feed-modal").addEventListener("pointerup", event => {
   if (dragged) {
     dragged.style.transition = "transform .14s ease";
     dragged.style.transform = "";
+  }
+  if (isTap) {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const horizontalPosition = (event.clientX - bounds.left) / Math.max(bounds.width, 1);
+    if (horizontalPosition <= stockFeedGesture.sideZone || horizontalPosition >= 1 - stockFeedGesture.sideZone) {
+      event.preventDefault();
+      stockFeedMoved = true;
+      moveStockFeedPhoto(horizontalPosition < 0.5 ? -1 : 1);
+      setTimeout(() => { stockFeedMoved = false; }, 380);
+    }
+    setTimeout(() => { if (dragged) dragged.style.transition = ""; }, 150);
+    return;
   }
   if (!shouldNavigate) {
     setTimeout(() => { if (dragged) dragged.style.transition = ""; }, 150);
