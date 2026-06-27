@@ -178,18 +178,18 @@ html{scroll-padding-top:96px}.button,.nav-cta,.card-link,.card-whatsapp,.price-b
   .feed-card{position:relative;width:100%;height:100%;overflow:hidden;background:#050b14;user-select:none;-webkit-user-select:none}
   .feed-image-wrap{position:absolute;inset:0 0 30%;display:grid;place-items:center;background:linear-gradient(180deg,#0c1626,#050b14);cursor:pointer}
   .feed-image-wrap img{width:100%;height:100%;object-fit:contain}
-  .feed-info{position:absolute;left:0;right:0;bottom:0;padding:24px 18px 22px;background:linear-gradient(180deg,rgba(5,11,20,0),rgba(5,11,20,.92) 16%,#050b14 100%)}
+  .feed-info{position:absolute;z-index:2;left:0;right:0;bottom:0;padding:24px 18px 22px;background:linear-gradient(180deg,rgba(5,11,20,0),rgba(5,11,20,.92) 16%,#050b14 100%)}
   .feed-info small{display:block;color:var(--accent);font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.12em}
   .feed-info h2{max-width:92%;margin:5px 0 7px;font-size:1.5rem;line-height:1.05;color:#fff}
   .feed-info strong{display:block;color:#ffb52f;font-size:1.28rem}
   .feed-info ul{display:flex;gap:8px;margin:13px 0 16px;padding:0;list-style:none;overflow-x:auto}
   .feed-info li{flex:0 0 auto;padding:8px 10px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(255,255,255,.06);color:#e6edf6;font-size:.78rem;font-weight:800}
-  .feed-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .feed-actions{position:relative;z-index:3;display:grid;grid-template-columns:1fr 1fr;gap:9px}
   .feed-actions a,.feed-actions button{min-height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.18);font-size:.82rem;font-weight:900}
   .feed-actions a{display:grid;place-items:center;background:#21c45d;color:#fff}
   .feed-actions button{background:#fff;color:var(--navy)}
   .feed-actions button:last-child{grid-column:1/-1;background:var(--accent);border-color:transparent}
-  .feed-detail-sheet{max-height:34dvh;margin-top:14px;padding:13px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.07);overflow:auto;-webkit-overflow-scrolling:touch}
+  .feed-detail-sheet{max-height:28dvh;margin:0 0 10px;padding:13px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.07);overflow:auto;-webkit-overflow-scrolling:touch}
   .feed-detail-sheet p{color:#e8eef8;font-size:.86rem;line-height:1.55}
   .feed-detail-sheet div{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
   .feed-detail-sheet span{padding:6px 8px;border-radius:999px;background:rgba(255,255,255,.1);color:#fff;font-size:.72rem;font-weight:800}
