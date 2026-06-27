@@ -42,6 +42,13 @@
         <span class="brand-mark" aria-hidden="true">AG</span>
         <span><strong>AG Motors</strong><small>Curitiba</small></span>
       </a>
+      <div class="mobile-brand-road" aria-hidden="true">
+        <svg class="mobile-brand-car" viewBox="0 0 48 22">
+          <path d="M5 15.5h3.2l2.8-6h19.5l5.7 6H43v3H5zM15 9.5l3-4h8.5l4 4z"/>
+          <circle cx="13" cy="18" r="3"/>
+          <circle cx="36" cy="18" r="3"/>
+        </svg>
+      </div>
       <nav class="main-nav" id="menu-principal" aria-label="Navegação principal">
         <a href="#estoque">Estoque</a>
         <a href="#financiamento">Financiamento</a>
@@ -51,10 +58,10 @@
       </nav>
     </div>
     <nav class="mobile-shortcuts container" aria-label="Atalhos principais">
-      <button type="button" data-feed-open>Estoque</button>
-      <a href="#venda-seu-carro">Avaliação</a>
-      <a href="#financiamento">Simulador</a>
-      <a href="#contato">Contato</a>
+      <button type="button" data-feed-open data-shortcut="estoque">Estoque</button>
+      <a href="#venda-seu-carro" data-shortcut="venda-seu-carro">Avaliação</a>
+      <a href="#financiamento" data-shortcut="financiamento">Simulador</a>
+      <a href="#contato" data-shortcut="contato">Contato</a>
     </nav>
   </header>
 

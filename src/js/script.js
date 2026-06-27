@@ -35,6 +35,37 @@ function initializeWhatsAppLinks() {
   });
 }
 
+function setActiveMobileShortcut(shortcut = "") {
+  document.querySelectorAll(".mobile-shortcuts [data-shortcut]").forEach(item => {
+    const active = item.dataset.shortcut === shortcut;
+    item.classList.toggle("is-active", active);
+    if (active) item.setAttribute("aria-current", "page");
+    else item.removeAttribute("aria-current");
+  });
+}
+
+function initializeMobileShortcutState() {
+  document.querySelectorAll(".mobile-shortcuts [data-shortcut]").forEach(item => {
+    item.addEventListener("click", () => setActiveMobileShortcut(item.dataset.shortcut));
+  });
+  if (!("IntersectionObserver" in window)) return;
+  const sections = [
+    [$(".hero.home-screen"), ""],
+    [$("#estoque"), "estoque"],
+    [$("#financiamento"), "financiamento"],
+    [$("#venda-seu-carro"), "venda-seu-carro"],
+    [$("#contato"), "contato"]
+  ].filter(([section]) => section);
+  const observer = new IntersectionObserver(entries => {
+    const current = entries.find(entry => entry.isIntersecting);
+    if (current) setActiveMobileShortcut(current.target.dataset.mobileShortcutSection || "");
+  }, { rootMargin: "-38% 0px -52% 0px", threshold: 0 });
+  sections.forEach(([section, shortcut]) => {
+    section.dataset.mobileShortcutSection = shortcut;
+    observer.observe(section);
+  });
+}
+
 function escapeHTML(value = "") {
   return String(value).replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
 }
@@ -636,5 +667,6 @@ document.addEventListener("keydown", event => {
 });
 $("#current-year").textContent = new Date().getFullYear();
 initializeWhatsAppLinks();
+initializeMobileShortcutState();
 calculateFinance();
 loadVehicles();
