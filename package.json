@@ -4,7 +4,7 @@
   "scripts": {
     "build": "gulp build",
     "dev": "gulp dev",
-    "check": "node --check src/js/script.js && node --check src/js/admin.js && node --check src/js/supabase-client.js"
+    "check": "node --check src/js/script.js && node --check src/js/admin.js && node --check src/js/supabase-client.js && node --check src/api/vehicle.mjs"
   },
   "keywords": [],
   "author": "",
