@@ -342,7 +342,7 @@ html{scroll-padding-top:96px}.button,.nav-cta,.card-link,.card-whatsapp,.price-b
   .footer-map,.footer-map iframe{min-height:210px;height:210px}
 }
 @media(max-width:560px){
-  .hero.home-screen .hero-copy h1{font-size:clamp(2.55rem,13vw,3.55rem)}
+  .hero.home-screen .hero-copy h1{font-size:clamp(2.05rem,10vw,2.75rem);line-height:1.02;margin-bottom:14px}
   .hero.home-screen .hero-copy>p{font-size:.94rem}
   .hero.home-screen .trust-list{display:none}
   .hero.home-screen .hero-visual{aspect-ratio:16/9}
