@@ -206,8 +206,8 @@ function stockFeedSlideMarkup(vehicle, extraClass = "") {
       <h2>${escapeHTML(vehicle.model)}</h2>
       <strong>${money.format(vehicle.price)}</strong>
       <ul><li>${vehicle.year}/${vehicle.modelYear || vehicle.year}</li><li>${vehicle.mileage ? `${number.format(vehicle.mileage)} km` : "Km consulte"}</li><li>${escapeHTML(vehicle.transmission || "Câmbio consulte")}</li></ul>
-      <div class="feed-actions"><a href="${whatsappUrl(vehicleWhatsAppMessage(vehicle))}" target="_blank" rel="noopener noreferrer">WhatsApp</a><button type="button" data-feed-more>${stockFeedDetailsOpen ? "Ocultar detalhes" : "Ver detalhes"}</button><button type="button" data-finance-lead="${escapeHTML(vehicle.id)}">Pré-análise</button></div>
       <div class="feed-detail-sheet" ${stockFeedDetailsOpen ? "" : "hidden"}><p>${escapeHTML(vehicle.description || "Fale com nossa equipe para conhecer todos os detalhes deste veículo.")}</p>${features.length ? `<div>${features.map(feature => `<span>${escapeHTML(feature)}</span>`).join("")}</div>` : ""}</div>
+      <div class="feed-actions"><a href="${whatsappUrl(vehicleWhatsAppMessage(vehicle))}" target="_blank" rel="noopener noreferrer">WhatsApp</a><button type="button" data-feed-more>${stockFeedDetailsOpen ? "Ocultar detalhes" : "Ver detalhes"}</button><button type="button" data-finance-lead="${escapeHTML(vehicle.id)}">Pré-análise</button></div>
     </div>
   </div>`;
 }
