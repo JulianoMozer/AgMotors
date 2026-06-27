@@ -159,8 +159,9 @@ function renderVehicles() {
   grid.classList.toggle("is-expanded", inventoryExpanded);
   $("#vehicle-count").textContent = `${result.length} ${result.length === 1 ? "veículo" : "veículos"}`;
   $("#empty-state").hidden = result.length > 0;
-  const feedButton = $("[data-feed-open]");
-  if (feedButton) feedButton.disabled = result.length === 0;
+  document.querySelectorAll("[data-feed-open]").forEach(feedButton => {
+    feedButton.disabled = result.length === 0;
+  });
   const expandButton = $("[data-inventory-expand]");
   if (expandButton) {
     const sampleSize = matchMedia("(max-width: 1050px)").matches ? 2 : 3;
@@ -453,10 +454,6 @@ function moveGalleryLightbox(direction) {
   renderGalleryLightbox();
 }
 
-$(".menu-toggle").addEventListener("click", event => {
-  const open = event.currentTarget.getAttribute("aria-expanded") === "true";
-  event.currentTarget.setAttribute("aria-expanded", String(!open)); $(".main-nav").classList.toggle("open", !open);
-});
 document.addEventListener("click", event => {
   const priceButton = event.target.closest("[data-price-min]"); if (priceButton) applyPriceShortcut(priceButton);
   const clearPriceButton = event.target.closest("[data-price-clear]"); if (clearPriceButton) clearPriceShortcut();
@@ -468,14 +465,26 @@ document.addEventListener("click", event => {
   if (event.target.closest("[data-feed-close]")) $("#stock-feed-modal").close();
   const button = event.target.closest("[data-vehicle]"); if (button) openVehicleEntry(button.dataset.vehicle);
   const image = event.target.closest("[data-image]"); if (image) updateDetailImage(image);
-  const financeLead = event.target.closest("[data-finance-lead]"); if (financeLead) { if ($("#stock-feed-modal").open) $("#stock-feed-modal").close(); openFinanceLead(financeLead.dataset.financeLead); }
+  const financeLead = event.target.closest("[data-finance-lead]"); if (financeLead) {
+    event.preventDefault();
+    event.stopPropagation();
+    const vehicleId = financeLead.dataset.financeLead;
+    const feedModal = $("#stock-feed-modal");
+    if (feedModal.open) {
+      feedModal.close();
+      requestAnimationFrame(() => requestAnimationFrame(() => openFinanceLead(vehicleId)));
+    } else {
+      openFinanceLead(vehicleId);
+    }
+    return;
+  }
   const mainImage = event.target.closest(".detail-main-button"); if (mainImage) openGalleryLightbox(Number(mainImage.dataset.galleryIndex) || 0);
   const galleryThumb = event.target.closest("[data-gallery-thumb]"); if (galleryThumb) { currentGalleryIndex = Number(galleryThumb.dataset.galleryThumb) || 0; renderGalleryLightbox(); }
   if (event.target.closest("[data-gallery-prev]")) moveGalleryLightbox(-1);
   if (event.target.closest("[data-gallery-next]")) moveGalleryLightbox(1);
   if (event.target.closest("[data-gallery-close]")) $("#gallery-lightbox").close();
   if (event.target.closest("[data-finance-lead-done]")) $("#finance-lead-modal").close();
-  if (event.target.matches(".main-nav a")) { $(".main-nav").classList.remove("open"); $(".menu-toggle").setAttribute("aria-expanded", "false"); }
+  if (event.target.matches(".main-nav a")) $(".main-nav").classList.remove("open");
 });
 ["#vehicle-search", "#brand-filter", "#sort-filter"].forEach(selector => $(selector).addEventListener("input", renderVehicles));
 ["#finance-value", "#finance-down", "#finance-term"].forEach(selector => $(selector).addEventListener("input", calculateFinance));
