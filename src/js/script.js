@@ -516,6 +516,24 @@ function moveGalleryLightbox(direction) {
   renderGalleryLightbox();
 }
 
+async function shareCurrentFeedVehicle() {
+  const vehicle = stockFeedVehicles[stockFeedIndex];
+  if (!vehicle) return;
+  const title = `${vehicle.brand} ${vehicle.model} | AG Motors Curitiba`;
+  const url = vehicleShareUrl(vehicle);
+  const text = `Confira este ${vehicle.brand} ${vehicle.model} na AG Motors Curitiba.`;
+  try {
+    if (navigator.share) {
+      await navigator.share({ title, text, url });
+      return;
+    }
+    await navigator.clipboard.writeText(url);
+    showToast("Link do veículo copiado.");
+  } catch (error) {
+    if (error?.name !== "AbortError") showToast("Não foi possível compartilhar agora.");
+  }
+}
+
 document.addEventListener("click", event => {
   const priceButton = event.target.closest("[data-price-min]"); if (priceButton) applyPriceShortcut(priceButton);
   const clearPriceButton = event.target.closest("[data-price-clear]"); if (clearPriceButton) clearPriceShortcut();
@@ -524,6 +542,7 @@ document.addEventListener("click", event => {
   const feedVehicle = event.target.closest("[data-feed-vehicle]"); if (feedVehicle) openStockFeed(feedVehicle.dataset.feedVehicle);
   const feedMore = event.target.closest("[data-feed-more]"); if (feedMore) { stockFeedDetailsOpen = !stockFeedDetailsOpen; $("#feed-card").dataset.transition = "details"; renderStockFeed(); }
   const feedDetail = event.target.closest("[data-feed-detail]"); if (feedDetail) { if (stockFeedMoved) return; $("#stock-feed-modal").close(); openVehicleEntry(feedDetail.dataset.feedDetail); }
+  if (event.target.closest("[data-feed-share]")) shareCurrentFeedVehicle();
   if (event.target.closest("[data-feed-close]")) $("#stock-feed-modal").close();
   const button = event.target.closest("[data-vehicle]"); if (button) openVehicleEntry(button.dataset.vehicle);
   const image = event.target.closest("[data-image]"); if (image) updateDetailImage(image);

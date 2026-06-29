@@ -124,10 +124,28 @@ $("#existing-images").addEventListener("dragend", () => {
 $("#cancel-delete").addEventListener("click", () => $("#delete-modal").close());
 $("#confirm-delete").addEventListener("click", async () => { try { const vehicle = vehicles.find(item => String(item.id) === String(deletingId)); await database.deleteVehicle(deletingId, token); if (vehicle) await Promise.allSettled([...new Set([vehicle.cover, ...(vehicle.images || [])])].filter(Boolean).map(url => database.deleteImage(url, token))); $("#delete-modal").close(); toast("Veículo excluído."); loadVehicles(); } catch (error) { toast(error.message); } });
 $("#vehicle-form").addEventListener("submit", async event => {
-  event.preventDefault(); message("#vehicle-message", "Salvando...");
+  event.preventDefault();
+  const submitButton = event.submitter || $("#vehicle-form button[type='submit']");
+  const originalButtonText = submitButton.textContent;
+  submitButton.disabled = true;
+  submitButton.textContent = "Preparando...";
+  message("#vehicle-message", "Preparando o cadastro...");
   try {
-    const images = await Promise.all(photoItems.map(item => item.type === "url" ? item.value : database.uploadImage(item.value, token)));
+    const pendingUploads = photoItems.filter(item => item.type === "file").length;
+    let uploadedCount = 0;
+    for (const item of photoItems) {
+      if (item.type !== "file") continue;
+      uploadedCount += 1;
+      const progress = `Enviando foto ${uploadedCount} de ${pendingUploads}...`;
+      message("#vehicle-message", progress);
+      submitButton.textContent = `${uploadedCount}/${pendingUploads} fotos`;
+      item.value = await database.uploadImage(item.value, token);
+      item.type = "url";
+    }
+    const images = photoItems.map(item => item.value);
     if (!images.length) throw new Error("Adicione ao menos uma foto do veículo.");
+    message("#vehicle-message", "Salvando os dados do veículo...");
+    submitButton.textContent = "Salvando...";
     const brand = $("#admin-brand").value.trim(); const model = $("#admin-model").value.trim(); const year = Number($("#admin-year").value);
     const payload = { id: $("#vehicle-id").value || undefined, slug: `${slugify(brand)}-${slugify(model)}-${year}-${Date.now().toString().slice(-5)}`, brand, model, year, model_year: Number($("#admin-model-year").value), price: Number($("#admin-price").value), mileage: Number($("#admin-mileage").value) || null, transmission: $("#admin-transmission").value.trim(), fuel: $("#admin-fuel").value.trim(), color: $("#admin-color").value.trim(), status: $("#admin-form-status").value, description: $("#admin-description").value.trim(), features: $("#admin-features").value.split("\n").map(v => v.trim()).filter(Boolean), featured: $("#admin-featured").checked, cover: images[0], images };
     if (payload.id) delete payload.slug;
@@ -135,7 +153,13 @@ $("#vehicle-form").addEventListener("submit", async event => {
     const removedImages = originalImages.filter(url => !images.includes(url));
     await Promise.allSettled(removedImages.map(url => database.deleteImage(url, token)));
     $("#vehicle-form-modal").close(); toast("Veículo salvo com sucesso."); loadVehicles();
-  } catch (error) { message("#vehicle-message", error.message); }
+  } catch (error) {
+    message("#vehicle-message", error.message);
+    $("#vehicle-message").scrollIntoView({ block: "nearest", behavior: "smooth" });
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = originalButtonText;
+  }
 });
 
 if (!database.configured) { $("#config-alert").hidden = false; $("#login-form button").disabled = true; }
