@@ -1,9 +1,13 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#0b1220">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#0b1220">
   <title>Painel administrativo | AG Motors</title>
-  <link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
 </head>
 <body class="admin-page">
   <main>
@@ -12,30 +16,176 @@
         <a class="brand" href="index.html"><span class="brand-mark">AG</span><span><strong>AG Motors</strong><small>Administração</small></span></a>
         <div><span class="eyebrow">Acesso restrito</span><h1>Gerencie seu estoque</h1><p>Entre com a conta administrativa configurada no Supabase.</p></div>
         <div class="admin-alert" id="config-alert" hidden>O Supabase ainda não foi configurado. Preencha <code>src/js/config.js</code> para ativar o painel.</div>
-        <form id="login-form"><label>E-mail<input id="login-email" type="email" autocomplete="username" required></label><label>Senha<input id="login-password" type="password" autocomplete="current-password" required></label><button class="button button-primary button-full" type="submit">Entrar</button><p class="form-message" id="login-message" role="alert"></p></form>
-        <a class="back-site" href="index.html">← Voltar para o site</a>
+        <form id="login-form">
+          <label>E-mail<input id="login-email" type="email" autocomplete="username" required></label>
+          <label>Senha<input id="login-password" type="password" autocomplete="current-password" required></label>
+          <button class="button button-primary button-full" type="submit">Entrar</button>
+          <p class="form-message" id="login-message" role="alert"></p>
+        </form>
+        <a class="back-site" href="index.html">Voltar para o site</a>
       </div>
     </section>
 
     <section class="admin-shell" id="admin-view" hidden>
-      <aside class="admin-sidebar"><a class="brand brand-footer" href="index.html"><span class="brand-mark">AG</span><span><strong>AG Motors</strong><small>Painel</small></span></a><nav><button class="active" type="button" data-view="inventory">Estoque</button><button type="button" data-view="financing">Financiamento</button><a href="index.html" target="_blank" rel="noopener">Ver site</a></nav><button class="logout-button" id="logout-button" type="button">Sair</button></aside>
+      <aside class="admin-sidebar">
+        <a class="brand brand-footer" href="index.html"><span class="brand-mark">AG</span><span><strong>AG Motors</strong><small>Painel</small></span></a>
+        <nav>
+          <button class="active" type="button" data-view="inventory">Estoque</button>
+          <button type="button" data-view="expenses">Despesas</button>
+          <button type="button" data-view="financing">Financiamento</button>
+          <a href="index.html" target="_blank" rel="noopener">Ver site</a>
+        </nav>
+        <button class="logout-button" id="logout-button" type="button">Sair</button>
+      </aside>
+
       <div class="admin-content">
-        <header class="admin-header inventory-view"><div><span class="eyebrow">Administração</span><h1>Estoque de veículos</h1></div><button class="button button-primary" id="new-vehicle" type="button">+ Cadastrar veículo</button></header>
-        <div class="dashboard-cards inventory-view"><article><span>Total</span><strong id="stat-total">0</strong></article><article><span>Disponíveis</span><strong id="stat-available">0</strong></article><article><span>Reservados</span><strong id="stat-reserved">0</strong></article><article><span>Vendidos</span><strong id="stat-sold">0</strong></article></div>
-        <div class="admin-toolbar inventory-view"><input id="admin-search" type="search" placeholder="Buscar por marca ou modelo"><select id="admin-status"><option value="">Todos os status</option><option value="available">Disponível</option><option value="reserved">Reservado</option><option value="sold">Vendido</option></select></div>
-        <div class="admin-table-wrap inventory-view"><table><thead><tr><th>Veículo</th><th>Ano</th><th>Preço</th><th>Status</th><th>Destaque</th><th><span class="sr-only">Ações</span></th></tr></thead><tbody id="admin-list"></tbody></table><div class="admin-empty" id="admin-empty" hidden>Nenhum veículo encontrado.</div></div>
+        <header class="admin-header inventory-view">
+          <div><span class="eyebrow">Administração</span><h1>Estoque de veículos</h1><p id="inventory-updated">Carregando estoque...</p></div>
+          <button class="button button-primary" id="new-vehicle" type="button">Cadastrar veículo</button>
+        </header>
+
+        <div class="dashboard-cards inventory-view">
+          <article class="stat-card" role="button" tabindex="0" data-inventory-filter=""><span>Total</span><strong id="stat-total">0</strong></article>
+          <article class="stat-card" role="button" tabindex="0" data-inventory-filter="available"><span>Disponíveis</span><strong id="stat-available">0</strong></article>
+          <article class="stat-card" role="button" tabindex="0" data-inventory-filter="reserved"><span>Reservados</span><strong id="stat-reserved">0</strong></article>
+          <article class="stat-card" role="button" tabindex="0" data-inventory-filter="sold"><span>Vendidos</span><strong id="stat-sold">0</strong></article>
+          <article class="stat-card" role="button" tabindex="0" data-inventory-filter="hidden"><span>Ocultos</span><strong id="stat-hidden">0</strong></article>
+        </div>
+
+        <div class="management-strip inventory-view">
+          <article><span>Valor investido no estoque</span><strong id="stat-invested">R$ 0,00</strong></article>
+          <article><span>Lucro realizado</span><strong id="stat-margin">R$ 0,00</strong></article>
+          <article><span>Vendidos neste mês</span><strong id="stat-sold-month">0</strong></article>
+          <article><span>Visualizações</span><strong id="stat-views">0</strong></article>
+          <article><span>Cliques no WhatsApp</span><strong id="stat-whatsapp">0</strong></article>
+          <article><span>Cliques em financiamento</span><strong id="stat-financing">0</strong></article>
+          <article><span>Sem preço de compra</span><strong id="stat-missing-purchase">0</strong></article>
+          <article><span>Controle financeiro</span><strong id="stat-control-health">Opcional</strong></article>
+        </div>
+
+        <section class="insight-grid inventory-view" aria-label="Indicadores do estoque">
+          <div class="insight-panel"><header><strong>Mais acessados</strong><span>Visualizações e contatos</span></header><div class="insight-list" id="top-vehicles"></div></div>
+          <div class="insight-panel"><header><strong>Parados no estoque</strong><span>Prioridade de ação</span></header><div class="insight-list" id="stale-vehicles"></div></div>
+          <div class="insight-panel"><header><strong>Custos por categoria</strong><span>Onde o dinheiro está indo</span></header><div class="insight-list" id="cost-categories"></div></div>
+        </section>
+
+        <div class="admin-toolbar inventory-view">
+          <input id="admin-search" type="search" placeholder="Buscar por placa, marca ou modelo">
+          <select id="admin-status"><option value="">Todos os status</option><option value="available">Disponível</option><option value="reserved">Reservado</option><option value="sold">Vendido</option><option value="hidden">Oculto</option></select>
+          <button class="filter-clear" id="clear-inventory-filters" type="button" disabled>Limpar</button>
+          <strong class="result-count" id="inventory-result-count" aria-live="polite"></strong>
+        </div>
+        <div class="admin-table-wrap inventory-view">
+          <table><thead><tr><th>Veículo</th><th>Placa</th><th>Ano</th><th>Preço</th><th>Status</th><th>Resultado</th><th><span class="sr-only">Ações</span></th></tr></thead><tbody id="admin-list"></tbody></table>
+          <div class="admin-empty" id="admin-empty" hidden>Nenhum veículo encontrado.</div>
+        </div>
+
+        <section class="expenses-view" id="expenses-view" hidden>
+          <header class="admin-header"><div><span class="eyebrow">Operação</span><h1>Despesas gerais</h1><p id="expense-updated">Custos da loja sem burocracia.</p></div></header>
+          <div class="management-strip expense-summary"><article><span>Este mês</span><strong id="expense-month-total">R$ 0,00</strong></article><article><span>Total registrado</span><strong id="expense-all-total">R$ 0,00</strong></article><article><span>Lançamentos</span><strong id="expense-count">0</strong></article></div>
+          <form class="expense-form" id="expense-form">
+            <input id="expense-id" type="hidden">
+            <label>Data<input id="expense-date" type="date"></label>
+            <label>Categoria<select id="expense-category"><option value="">Selecione</option><option>Lavador</option><option>Limpeza</option><option>Aluguel</option><option>Energia</option><option>Internet</option><option>Contador</option><option>Funcionários</option><option>Anúncios</option><option>Combustível geral</option><option>Impostos</option><option>Outros</option></select></label>
+            <label>Descrição<input id="expense-description" placeholder="Opcional"></label>
+            <label>Valor (R$)<input id="expense-amount" type="number" min="0" step="0.01"></label>
+            <label>Observação<input id="expense-notes" placeholder="Opcional"></label>
+            <button class="button button-primary" type="submit">Salvar despesa</button>
+            <button class="button button-ghost" id="expense-cancel" type="button" hidden>Cancelar edição</button>
+          </form>
+          <p class="form-message" id="expense-message" role="alert"></p>
+          <div class="admin-table-wrap"><table><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Observação</th><th><span class="sr-only">Ações</span></th></tr></thead><tbody id="expense-list"></tbody></table><div class="admin-empty" id="expense-empty" hidden>Nenhuma despesa geral registrada.</div></div>
+        </section>
+
         <section class="lead-view" id="financing-view" hidden>
-          <header class="admin-header"><div><span class="eyebrow">Pré-análise</span><h1>Leads de financiamento</h1><p>Acompanhe solicitações recebidas pelo site e atualize o status do atendimento.</p></div><button class="button button-ghost" id="refresh-leads" type="button">Atualizar</button></header>
-          <div class="dashboard-cards lead-stats"><article><span>Novos</span><strong id="lead-new">0</strong></article><article><span>Em atendimento</span><strong id="lead-contacting">0</strong></article><article><span>Finalizados</span><strong id="lead-finished">0</strong></article></div>
-          <div class="admin-toolbar lead-toolbar"><input id="lead-search" type="search" placeholder="Buscar por veículo, CPF ou celular"><select id="lead-status-filter"><option value="">Todos os status</option><option value="novo">Novos</option><option value="em_atendimento">Em atendimento</option><option value="finalizado">Finalizados</option></select></div>
+          <header class="admin-header"><div><span class="eyebrow">Pré-análise</span><h1>Leads de financiamento</h1><p id="lead-updated">Acompanhe solicitações recebidas pelo site e atualize o status do atendimento.</p></div><button class="button button-ghost" id="refresh-leads" type="button">Atualizar</button></header>
+          <div class="dashboard-cards lead-stats"><article class="stat-card" role="button" tabindex="0" data-lead-filter="novo"><span>Novos</span><strong id="lead-new">0</strong></article><article class="stat-card" role="button" tabindex="0" data-lead-filter="em_atendimento"><span>Em atendimento</span><strong id="lead-contacting">0</strong></article><article class="stat-card" role="button" tabindex="0" data-lead-filter="finalizado"><span>Finalizados</span><strong id="lead-finished">0</strong></article></div>
+          <div class="admin-toolbar lead-toolbar"><input id="lead-search" type="search" placeholder="Buscar por veículo, CPF ou celular"><select id="lead-status-filter"><option value="">Todos os status</option><option value="novo">Novos</option><option value="em_atendimento">Em atendimento</option><option value="finalizado">Finalizados</option></select><button class="filter-clear" id="clear-lead-filters" type="button" disabled>Limpar</button><strong class="result-count" id="lead-result-count" aria-live="polite"></strong></div>
           <div class="admin-table-wrap leads-table-wrap"><table><thead><tr><th>Veículo</th><th>CPF</th><th>Nascimento</th><th>CNH</th><th>Celular</th><th>Solicitação</th><th>Status</th></tr></thead><tbody id="lead-list"></tbody></table><div class="admin-empty" id="lead-empty" hidden>Nenhum lead de financiamento recebido.</div></div>
         </section>
       </div>
     </section>
   </main>
 
-  <dialog class="admin-modal" id="vehicle-form-modal"><div class="admin-modal-header"><div><span class="eyebrow">Estoque</span><h2 id="form-title">Cadastrar veículo</h2></div><button type="button" class="admin-modal-close" aria-label="Fechar">×</button></div><form id="vehicle-form"><input id="vehicle-id" type="hidden"><div class="admin-form-grid"><label>Marca<input id="admin-brand" required></label><label>Modelo e versão<input id="admin-model" required></label><label>Ano de fabricação<input id="admin-year" type="number" min="1900" max="2100" required></label><label>Ano do modelo<input id="admin-model-year" type="number" min="1900" max="2100" required></label><label>Preço (R$)<input id="admin-price" type="number" min="0" step="100" required></label><label>Quilometragem<input id="admin-mileage" type="number" min="0" step="1"></label><label>Câmbio<input id="admin-transmission" placeholder="Manual ou automático"></label><label>Combustível<input id="admin-fuel" placeholder="Flex, gasolina..."></label><label>Cor<input id="admin-color"></label><label>Status<select id="admin-form-status"><option value="available">Disponível</option><option value="reserved">Reservado</option><option value="sold">Vendido</option></select></label></div><label>Descrição<textarea id="admin-description" rows="3"></textarea></label><label>Opcionais <small>Um por linha</small><textarea id="admin-features" rows="4"></textarea></label><label>Fotos <small>JPG, PNG ou WebP. A primeira será a capa.</small><input id="admin-images" type="file" accept="image/jpeg,image/png,image/webp" multiple></label><div class="existing-images" id="existing-images"></div><label class="admin-check"><input id="admin-featured" type="checkbox"> Exibir como destaque</label><p class="form-message" id="vehicle-message" role="alert"></p><div class="form-actions"><button class="button button-ghost admin-modal-close" type="button">Cancelar</button><button class="button button-primary" type="submit">Salvar veículo</button></div></form></dialog>
-  <dialog class="confirm-modal" id="delete-modal"><h2>Excluir veículo?</h2><p>Esta ação remove o veículo do banco. Se preferir manter o histórico, marque-o como vendido.</p><div class="form-actions"><button class="button button-ghost" id="cancel-delete" type="button">Cancelar</button><button class="button danger-button" id="confirm-delete" type="button">Excluir</button></div></dialog>
+  <dialog class="admin-modal" id="vehicle-form-modal">
+    <div class="admin-modal-header"><div><span class="eyebrow">Ficha inteligente</span><h2 id="form-title">Cadastrar veículo</h2><p>Use simples se quiser. Quanto mais preencher, mais o sistema mostra.</p></div><button type="button" class="admin-modal-close" aria-label="Fechar">×</button></div>
+    <form id="vehicle-form">
+      <input id="vehicle-id" type="hidden">
+      <div class="form-tabs" role="tablist" aria-label="Dados do veículo"><button class="active" type="button" data-form-tab="essential">Essencial</button><button type="button" data-form-tab="details">Dados</button><button type="button" data-form-tab="costs">Custos</button><button type="button" data-form-tab="sale">Venda</button><button type="button" data-form-tab="buyer">Comprador</button><button type="button" data-form-tab="metrics">Métricas</button></div>
+
+      <section class="form-panel active" data-form-panel="essential">
+        <div class="admin-form-grid">
+          <label>Placa <small>Recomendada para evitar duplicidade</small><input id="admin-plate" maxlength="8" placeholder="ABC1D23"></label>
+          <label>Status<select id="admin-form-status"><option value="available">Disponível no site</option><option value="reserved">Reservado</option><option value="sold">Vendido</option><option value="hidden">Oculto do site</option></select></label>
+          <label>Marca<input id="admin-brand" required></label>
+          <label>Modelo e versão<input id="admin-model" required></label>
+          <label>Ano de fabricação<input id="admin-year" type="number" min="1900" max="2100" required></label>
+          <label>Ano do modelo<input id="admin-model-year" type="number" min="1900" max="2100" required></label>
+          <label>Preço anunciado (R$)<input id="admin-price" type="number" min="0" step="0.01" required></label>
+          <label>Quilometragem<input id="admin-mileage" type="number" min="0" step="1"></label>
+        </div>
+        <label>Fotos <small>A primeira será a capa</small><input id="admin-images" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+        <div class="existing-images" id="existing-images"></div>
+        <label class="admin-check"><input id="admin-featured" type="checkbox"> Exibir como destaque</label>
+      </section>
+
+      <section class="form-panel" data-form-panel="details">
+        <div class="admin-form-grid"><label>Câmbio<input id="admin-transmission" placeholder="Manual ou automático"></label><label>Combustível<input id="admin-fuel" placeholder="Flex, gasolina..."></label><label>Cor<input id="admin-color"></label><label>Código interno<input id="admin-internal-code" placeholder="Opcional"></label><label>Renavam<input id="admin-renavam" inputmode="numeric" placeholder="Opcional"></label><label>Chassi<input id="admin-chassis" maxlength="17" placeholder="Opcional"></label></div>
+        <label>Descrição<textarea id="admin-description" rows="3"></textarea></label>
+        <label>Opcionais <small>Um por linha</small><textarea id="admin-features" rows="4"></textarea></label>
+      </section>
+
+      <section class="form-panel" data-form-panel="costs">
+        <div class="soft-panel"><strong>Controle opcional, sem bloqueio.</strong><span>Quem preencher compra e despesas recebe custo real e lucro correto.</span></div>
+        <div class="admin-form-grid"><label>Preço de compra (R$)<input id="admin-purchase-price" type="number" min="0" step="0.01"></label><label>Data de compra<input id="admin-purchase-date" type="date"></label></div>
+        <div class="cost-toolbar"><div><strong>Custos do veículo</strong><span id="cost-total">Total: R$ 0,00</span></div><button class="filter-clear" id="add-cost-item" type="button">Adicionar custo</button></div>
+        <div class="cost-list" id="cost-list"></div>
+      </section>
+
+      <section class="form-panel" data-form-panel="sale">
+        <div class="soft-panel"><strong>Venda rápida.</strong><span>Todos os campos são opcionais. O veículo pode ser marcado como vendido e completado depois.</span></div>
+        <div class="admin-form-grid">
+          <label>Preço de venda (R$)<input id="admin-sale-price" type="number" min="0" step="0.01"></label>
+          <label>Data da venda<input id="admin-sale-date" type="date"></label>
+          <label>Forma de pagamento<select id="admin-payment-method"><option value="">Não informada</option><option>À vista</option><option>Financiamento</option><option>Consórcio</option><option>Troca + dinheiro</option><option>Parcelado pela loja</option><option>Outro</option></select></label>
+          <label>Sinal recebido (R$)<input id="admin-down-payment" type="number" min="0" step="0.01"></label>
+          <label>Canal da venda<input id="admin-sale-channel" placeholder="Loja, WhatsApp, indicação..."></label>
+        </div>
+        <label>Condições do pagamento <small>Parcelas, vencimentos, PIX ou financiamento</small><textarea id="admin-payment-terms" rows="3" placeholder="Opcional. Ex.: entrada de R$ 5.000 e saldo em 3 parcelas..."></textarea></label>
+        <label>Observações da venda<textarea id="admin-sale-notes" rows="3"></textarea></label>
+        <div class="sale-buyer-invite"><div><strong>Vai gerar o contrato?</strong><span>Cadastre somente os dados essenciais do comprador.</span></div><button class="button button-primary" id="add-buyer" type="button">+ Comprador</button></div>
+      </section>
+
+      <section class="form-panel" data-form-panel="buyer">
+        <div class="soft-panel"><strong>Comprador opcional.</strong><span>Preencha somente se quiser gerar contrato e recibos automaticamente.</span></div>
+        <div class="admin-form-grid">
+          <label>Nome completo<input id="admin-buyer-name" autocomplete="name"></label>
+          <label>CPF<input id="admin-buyer-cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00"></label>
+          <label>Celular<input id="admin-buyer-phone" inputmode="tel" maxlength="15" placeholder="(41) 99999-9999"></label>
+          <label>E-mail<input id="admin-buyer-email" type="email" autocomplete="email"></label>
+        </div>
+        <label>Endereço completo<textarea id="admin-buyer-address" rows="3" placeholder="Rua, número, complemento, bairro, cidade e CEP"></textarea></label>
+        <div class="contract-condition-panel">
+          <div><strong>Abatimento vinculado a reparo conhecido</strong><span>Use quando parte do preço foi abatida para o comprador executar um reparo específico. Não trate como desconto genérico.</span></div>
+          <div class="admin-form-grid"><label>Valor do abatimento (R$)<input id="admin-repair-allowance-amount" type="number" min="0" step="0.01"></label><label>Reparo ou condição conhecida<input id="admin-repair-allowance-description" placeholder="Ex.: substituir compressor do ar-condicionado"></label></div>
+        </div>
+        <div class="document-actions"><button class="button button-ghost" type="button" data-document="contract">Contrato de compra e venda</button><button class="button button-ghost" type="button" data-document="deposit">Recibo de sinal</button><button class="button button-ghost" type="button" data-document="payment">Recibo de pagamento</button></div>
+        <p class="document-help">Os documentos abrem prontos para revisão, impressão ou salvamento em PDF.</p>
+      </section>
+
+      <section class="form-panel" data-form-panel="metrics">
+        <div class="metrics-grid"><article><span>Visualizações</span><strong id="metric-views">0</strong></article><article><span>Cliques WhatsApp</span><strong id="metric-whatsapp">0</strong></article><article><span>Financiamento</span><strong id="metric-financing">0</strong></article><article><span>Dias em estoque</span><strong id="metric-days">0</strong></article><article><span>Lucro bruto</span><strong id="metric-margin">Incompleta</strong></article><article><span>Margem</span><strong id="metric-margin-percent">Incompleta</strong></article></div>
+        <div class="traffic-panel"><strong>Origem das visualizações</strong><div class="insight-list" id="metric-sources"></div></div>
+      </section>
+
+      <p class="form-message" id="vehicle-message" role="alert"></p>
+      <div class="form-actions"><button class="button button-ghost admin-modal-close" type="button">Cancelar</button><button class="button button-primary" type="submit">Salvar veículo</button></div>
+    </form>
+  </dialog>
+
+  <datalist id="cost-category-options"><option value="Lataria"><option value="Pintura"><option value="Polimento"><option value="Higienização"><option value="Mecânica"><option value="Elétrica"><option value="Radiador"><option value="Pneus"><option value="Bateria"><option value="Combustível"><option value="Despachante/Documentação"><option value="Anúncios"><option value="Acessórios"><option value="Comissão"><option value="Outros"></datalist>
+  <dialog class="confirm-modal" id="delete-modal"><h2>Excluir veículo?</h2><p>Esta ação remove o veículo do banco. Veículos vendidos ficam protegidos no histórico.</p><div class="form-actions"><button class="button button-ghost" id="cancel-delete" type="button">Cancelar</button><button class="button danger-button" id="confirm-delete" type="button">Excluir</button></div></dialog>
   <div class="toast" id="admin-toast" role="status" aria-live="polite"></div>
   <script type="module" src="js/admin.js"></script>
-</body></html>
+</body>
+</html>

@@ -13,6 +13,16 @@
 .admin-modal input[type="file"]{max-width:100%;overflow:hidden}
 .photo-order-help{max-width:100%;overflow-wrap:anywhere}
 .form-actions button:disabled{cursor:wait;opacity:.7}
+.admin-toolbar{align-items:center;flex-wrap:wrap}
+.admin-toolbar input{min-width:220px}
+.filter-clear{height:44px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--navy);padding:0 14px;font-size:.75rem;font-weight:800}
+.filter-clear:not(:disabled):hover{border-color:var(--orange);color:var(--accent-dark)}
+.filter-clear:disabled{color:#9aa3af;cursor:not-allowed}
+.result-count{margin-left:auto;color:var(--muted);font-size:.72rem;white-space:nowrap}
+.stat-card{cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
+.stat-card:hover,.stat-card:focus-visible{border-color:var(--orange);box-shadow:0 10px 28px rgba(11,18,32,.08);outline:0;transform:translateY(-1px)}
+.stat-card.active{border-color:var(--orange);box-shadow:inset 0 0 0 1px var(--orange)}
+.button:disabled,.filter-clear:disabled{opacity:.7}
 @media(max-width:560px){
   .admin-modal{width:100%;height:100dvh;max-width:none;max-height:none;margin:0;border-radius:0;overflow:hidden}
   .admin-modal-header{position:sticky;z-index:3;top:0;min-height:78px;padding-top:max(18px,env(safe-area-inset-top));background:#fff}
@@ -22,4 +32,77 @@
   .form-actions{position:sticky;z-index:3;bottom:0;display:grid;grid-template-columns:1fr 1.35fr;margin:15px -16px 0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:rgba(255,255,255,.96);box-shadow:0 -12px 30px rgba(11,18,32,.1);backdrop-filter:blur(10px)}
   .form-actions .button{width:100%;min-width:0;padding-inline:10px}
   #vehicle-message{margin-inline:0;font-weight:800}
+  .admin-toolbar input{min-width:0}
+  .filter-clear,.result-count{width:100%}
+  .result-count{margin-left:0;text-align:left}
 }
+
+/* Ficha opcional: simples para operar, profunda para gerir */
+.dashboard-cards{grid-template-columns:repeat(5,1fr);margin-bottom:18px}
+.management-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:0 0 30px}
+.management-strip article{background:#fff;border:1px solid #e2e6ec;border-radius:10px;padding:14px}
+.management-strip span,.management-strip strong{display:block}
+.management-strip span{color:var(--muted);font-size:.68rem;font-weight:800}
+.management-strip strong{margin-top:4px;color:var(--navy)}
+.status-pill.hidden{background:#f3f4f6;color:#6b7280}
+.margin-value{font-weight:900;color:#11754e}
+.margin-value.negative{color:var(--danger)}
+.form-tabs{position:sticky;z-index:2;top:0;display:flex;gap:8px;margin:-25px -32px 22px;padding:14px 32px;border-bottom:1px solid var(--line);background:#fff;overflow-x:auto}
+.form-tabs button{white-space:nowrap;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--muted);padding:9px 12px;font-size:.72rem;font-weight:900}
+.form-tabs button.active{border-color:var(--orange);background:#fff7e8;color:var(--navy)}
+.form-panel{display:none}
+.form-panel.active{display:block}
+.admin-modal-header p{margin-top:6px;color:var(--muted);font-size:.78rem}
+.soft-panel{display:grid;gap:4px;margin-bottom:18px;padding:14px;border:1px solid #f3d581;border-radius:10px;background:#fff9ea;color:#735410}
+.soft-panel strong{font-size:.8rem}
+.soft-panel span{font-size:.75rem}
+.cost-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0 12px}
+.cost-toolbar strong,.cost-toolbar span{display:block}
+.cost-toolbar span{margin-top:3px;color:var(--muted);font-size:.75rem}
+.cost-list{display:grid;gap:10px}
+.cost-row{display:grid;grid-template-columns:1fr 1.1fr .7fr .8fr 1fr auto;gap:10px;align-items:end;padding:12px;border:1px solid var(--line);border-radius:10px;background:#f9fafb}
+.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.metrics-grid article{border:1px solid var(--line);border-radius:10px;padding:16px;background:#f9fafb}
+.metrics-grid span,.metrics-grid strong{display:block}
+.metrics-grid span{color:var(--muted);font-size:.7rem;font-weight:800}
+.metrics-grid strong{margin-top:4px;color:var(--navy);font-size:1.25rem}
+@media(max-width:900px){.dashboard-cards,.management-strip,.metrics-grid{grid-template-columns:repeat(2,1fr)}.cost-row{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.dashboard-cards,.management-strip,.metrics-grid,.cost-row{grid-template-columns:1fr}.form-tabs{margin:-20px -16px 18px;padding:12px 16px}.cost-toolbar{align-items:stretch;flex-direction:column}.cost-toolbar .filter-clear{width:100%}}
+
+/* Visão gerencial, despesas e documentos */
+.insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:30px}
+.insight-panel{min-width:0;border:1px solid #e2e6ec;border-radius:8px;background:#fff;overflow:hidden}
+.insight-panel>header{display:flex;justify-content:space-between;gap:12px;padding:15px 16px;border-bottom:1px solid #edf0f3}
+.insight-panel>header strong,.insight-panel>header span{display:block}
+.insight-panel>header strong{color:var(--navy);font-size:.82rem}
+.insight-panel>header span{color:var(--muted);font-size:.65rem;text-align:right}
+.insight-list{display:grid}
+.insight-item{width:100%;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:12px;border:0;border-bottom:1px solid #edf0f3;background:#fff;padding:12px 16px;text-align:left;color:inherit}
+button.insight-item{cursor:pointer}
+button.insight-item:hover{background:#f9fafb}
+.insight-item:last-child{border-bottom:0}
+.insight-item span,.insight-item strong,.insight-item small{display:block;min-width:0}
+.insight-item strong{font-size:.74rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.insight-item small{margin-top:2px;color:var(--muted);font-size:.64rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.insight-item b{flex:0 0 auto;color:var(--navy);font-size:.72rem}
+.insight-empty{padding:20px 16px;color:var(--muted);font-size:.72rem}
+.expenses-view{min-width:0}
+.expense-form{display:grid;grid-template-columns:.8fr 1fr 1.4fr .8fr 1.4fr auto;gap:12px;align-items:end;margin-bottom:8px;padding:18px;border:1px solid #e2e6ec;border-radius:8px;background:#fff}
+.expense-form label{display:block;min-width:0;color:var(--navy);font-size:.7rem;font-weight:800}
+.expense-form input,.expense-form select{display:block;width:100%;height:42px;margin-top:6px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:0 10px}
+.expense-form .button{height:42px;white-space:nowrap}
+.document-actions{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 8px}
+.document-actions .button{min-height:42px}
+.document-help{color:var(--muted);font-size:.72rem}
+.contract-condition-panel{display:grid;gap:14px;margin-top:18px;padding:16px;border:1px solid #e4bf5b;border-left:4px solid #d39a00;border-radius:8px;background:#fff9e8}
+.contract-condition-panel>div>strong,.contract-condition-panel>div>span{display:block}
+.contract-condition-panel>div>strong{color:var(--navy);font-size:.82rem}
+.contract-condition-panel>div>span{margin-top:4px;color:#735410;font-size:.72rem}
+.contract-condition-panel .admin-form-grid{margin-bottom:-16px}
+.sale-buyer-invite{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;padding:16px;border:1px solid var(--line);border-radius:8px;background:#f9fafb}
+.sale-buyer-invite strong,.sale-buyer-invite span{display:block}.sale-buyer-invite strong{font-size:.82rem}.sale-buyer-invite span{margin-top:3px;color:var(--muted);font-size:.72rem}
+.traffic-panel{margin-top:12px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.traffic-panel>strong{display:block;padding:14px 16px;border-bottom:1px solid var(--line);font-size:.78rem}
+@media(max-width:1180px){.insight-grid{grid-template-columns:1fr 1fr}.expense-form{grid-template-columns:repeat(3,1fr)}.expense-form .button{width:100%}}
+@media(max-width:900px){.insight-grid{grid-template-columns:1fr}.expense-form{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.expense-form{grid-template-columns:1fr}.document-actions{display:grid}.document-actions .button{width:100%}.insight-panel>header{align-items:flex-start;flex-direction:column}.insight-panel>header span{text-align:left}.sale-buyer-invite{align-items:stretch;flex-direction:column}.sale-buyer-invite .button{width:100%}}

@@ -28,6 +28,31 @@ const vehicleShareUrl = vehicle => `${siteUrl}${vehiclePath(vehicle)}`;
 const vehicleWhatsAppMessage = vehicle => `Olá, tenho interesse no ${vehicle.brand} ${vehicle.model} anunciado no site da AG Motors.\n${vehicleShareUrl(vehicle)}`;
 const initialVehicleToken = requestedVehicleToken();
 let vehicleReturnUrl = initialVehicleToken ? "/" : `${location.pathname}${location.search}${location.hash}`;
+const trackedVehicleViews = new Set();
+
+function trafficSource() {
+  const params = new URLSearchParams(location.search);
+  const campaign = String(params.get("utm_source") || "").toLowerCase();
+  const referrer = String(document.referrer || "").toLowerCase();
+  const value = campaign || referrer;
+  if (/instagram/.test(value)) return "instagram";
+  if (/facebook|fb\./.test(value)) return "facebook";
+  if (/google/.test(value)) return "google";
+  if (campaign) return "other";
+  return referrer ? "referral" : "direct";
+}
+
+function trackVehicle(vehicleId, eventName) {
+  if (!vehicleId || !database.configured) return;
+  database.trackVehicleEvent(vehicleId, eventName, trafficSource());
+}
+
+function trackVehicleView(vehicleId) {
+  const key = String(vehicleId || "");
+  if (!key || trackedVehicleViews.has(key)) return;
+  trackedVehicleViews.add(key);
+  trackVehicle(key, "view");
+}
 
 function initializeWhatsAppLinks() {
   document.querySelectorAll(`a[href^="https://wa.me/${whatsappNumber}"]`).forEach(link => {
@@ -196,7 +221,7 @@ function vehicleCard(vehicle) {
     <div class="vehicle-body"><div class="vehicle-title"><small>${escapeHTML(vehicle.brand)}</small><h3>${escapeHTML(vehicle.model)}</h3></div>
     <div class="vehicle-price"><span>Preço à vista</span><strong>${money.format(vehicle.price)}</strong></div>
     <ul class="vehicle-specs"><li><span>Ano</span><strong>${vehicle.year}/${vehicle.modelYear || vehicle.year}</strong></li><li><span>Km</span><strong>${vehicle.mileage ? number.format(vehicle.mileage) : "Consulte"}</strong></li><li><span>Câmbio</span><strong>${escapeHTML(vehicle.transmission || "Consulte")}</strong></li></ul>${benefits.length ? `<ul class="vehicle-benefits">${benefits.map(benefit => `<li>${benefit}</li>`).join("")}</ul>` : ""}
-    <div class="card-actions"><button class="card-link" type="button" data-vehicle="${escapeHTML(vehicle.id)}"><span>Conhecer este veículo</span><span aria-hidden="true">→</span></button><a class="card-whatsapp" href="${whatsappUrl(vehicleWhatsAppMessage(vehicle))}" target="_blank" rel="noopener noreferrer" aria-label="Perguntar pelo ${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)} no WhatsApp">WhatsApp</a></div></div>
+    <div class="card-actions"><button class="card-link" type="button" data-vehicle="${escapeHTML(vehicle.id)}"><span>Conhecer este veículo</span><span aria-hidden="true">→</span></button><a class="card-whatsapp" data-track-whatsapp="${escapeHTML(vehicle.id)}" href="${whatsappUrl(vehicleWhatsAppMessage(vehicle))}" target="_blank" rel="noopener noreferrer" aria-label="Perguntar pelo ${escapeHTML(vehicle.brand)} ${escapeHTML(vehicle.model)} no WhatsApp">WhatsApp</a></div></div>
   </article>`;
 }
 
@@ -236,12 +261,14 @@ function populateBrands() {
 function openVehicle(id) {
   const vehicle = vehicles.find(item => String(item.id) === String(id));
   if (!vehicle) return;
+  trackVehicleView(vehicle.id);
   const gallery = vehicleImages(vehicle);
   const message = encodeURIComponent(vehicleWhatsAppMessage(vehicle));
   const title = `${vehicle.brand} ${vehicle.model}`;
   const similar = similarVehicles(vehicle);
   $("#vehicle-detail").innerHTML = `<div class="detail-gallery"><button class="detail-main-button" type="button" data-gallery-index="0" aria-label="Ampliar foto principal"><img class="detail-main" src="${escapeHTML(gallery[0])}" alt="${escapeHTML(title)}"></button><div class="detail-thumbs">${gallery.map((image, index) => `<button type="button" data-image="${escapeHTML(image)}" data-gallery-index="${index}" aria-label="Exibir foto ${index + 1}"><img src="${escapeHTML(image)}" alt="" loading="lazy"></button>`).join("")}</div></div><div class="detail-copy"><header class="detail-header"><div><span class="eyebrow">${escapeHTML(vehicle.brand)}</span><h2>${escapeHTML(vehicle.model)}</h2></div><span class="detail-availability">Disponível</span><div class="detail-price-card"><small>Preço à vista</small><strong>${money.format(vehicle.price)}</strong></div></header><section class="detail-spec-section"><h3>Dados do veículo</h3><dl><div><dt>Ano</dt><dd>${vehicle.year}/${vehicle.modelYear || vehicle.year}</dd></div><div><dt>Quilometragem</dt><dd>${vehicle.mileage ? `${number.format(vehicle.mileage)} km` : "Consulte"}</dd></div><div><dt>Câmbio</dt><dd>${escapeHTML(vehicle.transmission || "Consulte")}</dd></div><div><dt>Combustível</dt><dd>${escapeHTML(vehicle.fuel || "Consulte")}</dd></div><div><dt>Cor</dt><dd>${escapeHTML(vehicle.color || "Consulte")}</dd></div></dl></section><details class="detail-panel"><summary><span>Sobre este veículo</span><small>Ver descrição completa</small></summary><p>${escapeHTML(vehicle.description || "Fale com nossa equipe para conhecer todos os detalhes deste veículo.")}</p></details>${vehicle.features.length ? `<details class="detail-panel"><summary><span>Itens e diferenciais</span><small>${vehicle.features.length} itens</small></summary><ul class="feature-list">${vehicle.features.map(feature => `<li>${escapeHTML(feature)}</li>`).join("")}</ul></details>` : ""}${similar.length ? `<section class="similar-vehicles"><div><span class="eyebrow">Continue pesquisando</span><h3>Veículos semelhantes</h3></div><div class="similar-grid">${similar.map(similarVehicleCard).join("")}</div></section>` : ""}<div class="detail-cta"><p>Gostou deste veículo?</p><a class="button button-primary button-full" href="https://wa.me/5541996155327?text=${message}" target="_blank" rel="noopener noreferrer">Falar com um consultor</a></div></div>`;
   const cta = $(".detail-cta");
+  cta.querySelector("a").dataset.trackWhatsapp = vehicle.id;
   cta.querySelector("p").textContent = "Quer saber se este veículo aprova para você?";
   cta.querySelector("a").insertAdjacentHTML("beforebegin", `<button class="button button-primary button-full finance-lead-trigger" type="button" data-finance-lead="${escapeHTML(vehicle.id)}">Descobrir se consigo financiar este veículo</button>`);
   cta.querySelector("a").classList.replace("button-primary", "button-ghost");
@@ -300,8 +327,11 @@ function renderStockFeed() {
     card.innerHTML = `<div class="feed-empty"><strong>Nenhum veículo encontrado.</strong><span>Ajuste os filtros ou volte ao estoque.</span></div>`;
     return;
   }
+  trackVehicleView(vehicle.id);
   card.classList.toggle("is-expanded", stockFeedDetailsOpen);
   card.innerHTML = stockFeedSlideMarkup(vehicle);
+  const whatsapp = $('a[href*="wa.me"]', card);
+  if (whatsapp) whatsapp.dataset.trackWhatsapp = vehicle.id;
   syncVehicleUrl(vehicle);
   updateStockFeedIndicators();
   preloadStockFeedNeighbors();
@@ -318,6 +348,7 @@ function transitionStockFeedVehicle(direction, nextIndex) {
   stockFeedPhotoIndex = 0;
   stockFeedDetailsOpen = false;
   syncVehicleUrl(stockFeedVehicles[stockFeedIndex]);
+  trackVehicleView(stockFeedVehicles[stockFeedIndex]?.id);
   const leavingClass = direction > 0 ? "is-leaving-up" : "is-leaving-down";
   const enteringClass = direction > 0 ? "is-entering-from-bottom" : "is-entering-from-top";
   outgoing.style.transform = "";
@@ -535,6 +566,8 @@ async function shareCurrentFeedVehicle() {
 }
 
 document.addEventListener("click", event => {
+  const trackedWhatsApp = event.target.closest("[data-track-whatsapp]");
+  if (trackedWhatsApp) trackVehicle(trackedWhatsApp.dataset.trackWhatsapp, "whatsapp");
   const priceButton = event.target.closest("[data-price-min]"); if (priceButton) applyPriceShortcut(priceButton);
   const clearPriceButton = event.target.closest("[data-price-clear]"); if (clearPriceButton) clearPriceShortcut();
   const feedOpen = event.target.closest("[data-feed-open]"); if (feedOpen) openStockFeed();
@@ -550,6 +583,7 @@ document.addEventListener("click", event => {
     event.preventDefault();
     event.stopPropagation();
     const vehicleId = financeLead.dataset.financeLead;
+    trackVehicle(vehicleId, "financing");
     const feedModal = $("#stock-feed-modal");
     if (feedModal.open) {
       feedModal.close();
