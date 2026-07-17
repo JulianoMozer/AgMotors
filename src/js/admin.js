@@ -21,6 +21,26 @@ let originalImages = [];
 let draggedPhotoId = "";
 let costItems = [];
 let activeVehicle = null;
+let photoGuideIndex = 0;
+
+const photoGuideSteps = [
+  { title: "Dianteira diagonal esquerda", note: "Enquadre o carro inteiro, formando a primeira ponta da flecha para dentro.", x: 18, y: 18 },
+  { title: "Dianteira reta", note: "Centralize a frente e mantenha o carro inteiro dentro do quadro.", x: 50, y: 8 },
+  { title: "Dianteira diagonal direita", note: "Repita o primeiro ângulo pelo outro lado, fechando a flecha dianteira.", x: 82, y: 18 },
+  { title: "Traseira diagonal esquerda", note: "Fotografe a traseira em diagonal, apontando para dentro.", x: 18, y: 82 },
+  { title: "Traseira reta", note: "Centralize a traseira e deixe as duas laterais equilibradas.", x: 50, y: 92 },
+  { title: "Traseira diagonal direita", note: "Repita a diagonal pelo outro lado, fechando a flecha traseira.", x: 82, y: 82 },
+  { title: "Lateral esquerda", note: "Mostre o perfil completo. No anúncio, a frente ficará voltada para a outra lateral.", x: 7, y: 50 },
+  { title: "Lateral direita", note: "Mostre o outro perfil completo, formando o par frente a frente.", x: 93, y: 50 },
+  { title: "Interior completo", note: "Mostre painel, volante, bancos dianteiros e acabamento em uma foto aberta.", kind: "detail", label: "Interior completo" },
+  { title: "Painel e quilometragem", note: "Ligue o painel e deixe a quilometragem legível.", kind: "detail", label: "Painel ligado + km" },
+  { title: "Manual e chaves", note: "Reúna manual, chave principal e chave reserva na mesma foto.", kind: "detail", label: "Manual + chaves" },
+  { title: "Bancos e acabamento", note: "Registre bancos dianteiros, traseiros e o estado do acabamento.", kind: "detail", label: "Bancos + acabamento" },
+  { title: "Motor aberto", note: "Abra o capô e fotografe o conjunto completo.", kind: "detail", label: "Motor completo" },
+  { title: "Detalhe do motor", note: "Aproxime sem cortar os componentes principais.", kind: "detail", label: "Detalhe do motor" },
+  { title: "Pneus e rodas", note: "Mostre a roda e a condição visível do pneu.", kind: "detail", label: "Pneu + roda" },
+  { title: "Acessórios e diferenciais", note: "Fotografe teto solar, multimídia ou o principal diferencial deste carro.", kind: "detail", label: "Acessório principal" }
+];
 
 const escapeHTML = (value = "") => String(value).replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
 const pluralize = (count, singular, plural) => `${count} ${count === 1 ? singular : plural}`;
@@ -470,6 +490,86 @@ function addPhotoFiles(files) {
   return added;
 }
 
+function guidedPhoto(stepIndex) {
+  return photoItems.find(item => item.guideStep === stepIndex);
+}
+
+function sortGuidedPhotos() {
+  const guided = photoItems.filter(item => Number.isInteger(item.guideStep)).sort((a, b) => a.guideStep - b.guideStep);
+  const regular = photoItems.filter(item => !Number.isInteger(item.guideStep));
+  photoItems = [...guided, ...regular];
+}
+
+async function prepareGuidedPhoto(file) {
+  if (!window.createImageBitmap) return file;
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const maxSide = 1920;
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", .86));
+    if (!blob) return file;
+    if (scale === 1 && blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg", lastModified: file.lastModified });
+  } catch { return file; }
+}
+
+function addGuidedPhoto(file, stepIndex) {
+  const previousIndex = photoItems.findIndex(item => item.guideStep === stepIndex);
+  if (previousIndex >= 0) {
+    const [previous] = photoItems.splice(previousIndex, 1);
+    if (previous.type === "file") URL.revokeObjectURL(previous.preview);
+  }
+  photoItems.push({ id: crypto.randomUUID(), type: "file", value: file, preview: URL.createObjectURL(file), guideStep: stepIndex });
+  sortGuidedPhotos();
+  renderExistingImages();
+}
+
+function renderPhotoGuide() {
+  const step = photoGuideSteps[photoGuideIndex];
+  const captured = Boolean(guidedPhoto(photoGuideIndex));
+  $("#photo-guide-counter").textContent = `Foto ${photoGuideIndex + 1} de ${photoGuideSteps.length}`;
+  $("#photo-guide-title").textContent = step.title;
+  $("#photo-guide-note").textContent = step.note;
+  $("#photo-guide-progress").style.width = `${((photoGuideIndex + 1) / photoGuideSteps.length) * 100}%`;
+  $("#photo-guide-back").disabled = photoGuideIndex === 0;
+  $("#photo-guide-capture-label").childNodes[0].textContent = captured ? "Refazer foto" : "Tirar foto";
+  $("#photo-guide-map").hidden = step.kind === "detail";
+  $("#photo-guide-detail").hidden = step.kind !== "detail";
+  if (step.kind === "detail") $("#photo-guide-detail-label").textContent = step.label;
+  else {
+    $("#photo-guide-map").style.setProperty("--camera-x", `${step.x}%`);
+    $("#photo-guide-map").style.setProperty("--camera-y", `${step.y}%`);
+  }
+  $("#photo-guide-dots").innerHTML = photoGuideSteps.map((item, index) => `<span class="${index === photoGuideIndex ? "current" : guidedPhoto(index) ? "done" : ""}" title="${escapeHTML(item.title)}"></span>`).join("");
+  const isLast = photoGuideIndex === photoGuideSteps.length - 1;
+  $("#photo-guide-finish").hidden = !isLast || !captured;
+  $("#photo-guide-capture-label").hidden = isLast && captured;
+}
+
+function openPhotoGuide() {
+  const firstMissing = photoGuideSteps.findIndex((step, index) => !guidedPhoto(index));
+  photoGuideIndex = firstMissing >= 0 ? firstMissing : 0;
+  renderPhotoGuide();
+  $("#photo-guide-modal").showModal();
+}
+
+function finishPhotoGuide() {
+  const completed = photoGuideSteps.filter((step, index) => guidedPhoto(index)).length;
+  renderExistingImages();
+  $("#photo-guide-modal").close();
+  toast(`${completed} foto(s) adicionada(s) pelo Roteiro AG Motors.`);
+}
+
+function advancePhotoGuide() {
+  if (photoGuideIndex < photoGuideSteps.length - 1) { photoGuideIndex += 1; renderPhotoGuide(); }
+  else finishPhotoGuide();
+}
+
 function findVehicleDocument(files) {
   const pdfs = files.filter(file => file.type === "application/pdf" || /\.pdf$/i.test(file.name));
   return pdfs.find(file => normalizedText(file.name).includes("crlv"))
@@ -732,6 +832,21 @@ $("#existing-images").insertAdjacentHTML("beforebegin", '<p class="photo-order-h
 $("#admin-images").addEventListener("change", event => {
   addPhotoFiles([...event.target.files]);
   event.target.value = "";
+});
+$("#open-photo-guide").addEventListener("click", openPhotoGuide);
+$("#close-photo-guide").addEventListener("click", () => $("#photo-guide-modal").close());
+$("#photo-guide-back").addEventListener("click", () => { if (photoGuideIndex > 0) { photoGuideIndex -= 1; renderPhotoGuide(); } });
+$("#photo-guide-skip").addEventListener("click", advancePhotoGuide);
+$("#photo-guide-finish").addEventListener("click", finishPhotoGuide);
+$("#photo-guide-capture").addEventListener("change", async event => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) { toast("Selecione uma imagem."); event.target.value = ""; return; }
+  if (file.size > 25 * 1024 * 1024) { toast("A foto deve ter no máximo 25 MB."); event.target.value = ""; return; }
+  const prepared = await prepareGuidedPhoto(file);
+  addGuidedPhoto(prepared, photoGuideIndex);
+  event.target.value = "";
+  advancePhotoGuide();
 });
 $("#crlv-file").addEventListener("change", async event => {
   const file = event.target.files?.[0];

@@ -129,6 +129,7 @@
           <label>Preço anunciado (R$)<input id="admin-price" type="number" min="0" step="0.01" required></label>
           <label>Quilometragem<input id="admin-mileage" type="number" min="0" step="1"></label>
         </div>
+        <div class="photo-guide-entry"><div><strong>Roteiro AG Motors</strong><span>Fotografe na ordem padrão usando a câmera do celular.</span></div><button class="button button-primary" id="open-photo-guide" type="button">Fotografar com roteiro</button></div>
         <label>Fotos <small>A primeira será a capa</small><input id="admin-images" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
         <div class="existing-images" id="existing-images"></div>
         <label class="admin-check"><input id="admin-featured" type="checkbox"> Exibir como destaque</label>
@@ -196,6 +197,26 @@
       <p class="form-message" id="vehicle-message" role="alert"></p>
       <div class="form-actions"><button class="button button-ghost admin-modal-close" type="button">Cancelar</button><button class="button button-primary" type="submit">Salvar veículo</button></div>
     </form>
+  </dialog>
+
+  <dialog class="photo-guide-modal" id="photo-guide-modal">
+    <div class="photo-guide-header"><div><span id="photo-guide-counter">Foto 1 de 16</span><h2 id="photo-guide-title">Dianteira diagonal esquerda</h2></div><button type="button" id="close-photo-guide" aria-label="Fechar roteiro">×</button></div>
+    <div class="photo-guide-progress"><span id="photo-guide-progress"></span></div>
+    <div class="photo-guide-body">
+      <div class="photo-guide-map" id="photo-guide-map">
+        <img src="img/car-guide.png" alt="Carro visto de cima indicando a posição da foto">
+        <span class="camera-position" id="photo-guide-camera">Câmera</span>
+      </div>
+      <div class="photo-guide-detail" id="photo-guide-detail" hidden><strong id="photo-guide-detail-label"></strong></div>
+      <p id="photo-guide-note"></p>
+      <div class="photo-guide-dots" id="photo-guide-dots" aria-label="Progresso das fotos"></div>
+    </div>
+    <div class="photo-guide-actions">
+      <button class="button button-ghost" id="photo-guide-back" type="button">Voltar</button>
+      <button class="button button-ghost" id="photo-guide-skip" type="button">Pular</button>
+      <label class="button button-primary" id="photo-guide-capture-label">Tirar foto<input id="photo-guide-capture" type="file" accept="image/*" capture="environment" hidden></label>
+      <button class="button button-primary" id="photo-guide-finish" type="button" hidden>Concluir roteiro</button>
+    </div>
   </dialog>
 
   <datalist id="cost-category-options"><option value="Lataria"><option value="Pintura"><option value="Polimento"><option value="Higienização"><option value="Mecânica"><option value="Elétrica"><option value="Radiador"><option value="Pneus"><option value="Bateria"><option value="Combustível"><option value="Despachante/Documentação"><option value="Anúncios"><option value="Acessórios"><option value="Comissão"><option value="Outros"></datalist>
