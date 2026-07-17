@@ -267,6 +267,155 @@ function normalizedText(value = "") {
   return String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
+const pdfJsUrl = "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.149/build/pdf.min.mjs";
+const pdfWorkerUrl = "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.149/build/pdf.worker.min.mjs";
+const tesseractUrl = "https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.min.js";
+
+function documentLines(value) {
+  return String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().split(/\r?\n/).map(line => line.replace(/\s+/g, " ").trim()).filter(Boolean);
+}
+
+function valueNearLabel(lines, labelPattern, valuePattern, lookAhead = 4) {
+  const index = lines.findIndex(line => labelPattern.test(line));
+  if (index < 0) return "";
+  for (let offset = 0; offset <= lookAhead && index + offset < lines.length; offset += 1) {
+    const match = lines[index + offset].match(valuePattern);
+    if (match) return match[1] || match[0];
+  }
+  return "";
+}
+
+function textValueNearLabel(lines, labelPattern) {
+  const knownLabel = /^(PLACA|RENAVAM|CHASSI|MARCA|MODELO|VERSAO|ANO|COR|COMBUSTIVEL|CATEGORIA|ESPECIE|TIPO|POTENCIA|CAPACIDADE|MOTOR|EIXOS|LOTACAO|CARROCERIA|NOME|CPF|CNPJ)\b/;
+  const index = lines.findIndex(line => labelPattern.test(line));
+  if (index < 0) return "";
+  const sameLine = lines[index].replace(labelPattern, "").replace(/^\s*[:/-]\s*/, "").trim();
+  if (sameLine && !knownLabel.test(sameLine)) return sameLine;
+  for (let offset = 1; offset <= 4 && index + offset < lines.length; offset += 1) {
+    const candidate = lines[index + offset];
+    if (!knownLabel.test(candidate)) return candidate;
+  }
+  return "";
+}
+
+function splitVehicleName(value) {
+  let clean = String(value || "").replace(/^(I|N)\//, "").replace(/\s+/g, " ").trim();
+  if (!clean) return { brand: "", model: "" };
+  const slash = clean.indexOf("/");
+  if (slash > 0) return { brand: clean.slice(0, slash).trim(), model: clean.slice(slash + 1).trim() };
+  const [brand, ...model] = clean.split(" ");
+  return { brand, model: model.join(" ") };
+}
+
+function parseCrlvText(value) {
+  const lines = documentLines(value);
+  const compact = lines.join(" ");
+  const plate = valueNearLabel(lines, /\bPLACA\b/, /\b([A-Z]{3}[0-9][A-Z0-9][0-9]{2})\b/) || compact.match(/\b([A-Z]{3}[0-9][A-Z0-9][0-9]{2})\b/)?.[1] || "";
+  const renavam = valueNearLabel(lines, /RENAVAM/, /\b(\d{9,11})\b/, 6) || "";
+  const chassis = valueNearLabel(lines, /CHASSI/, /\b([A-HJ-NPR-Z0-9]{17})\b/, 6) || compact.match(/\b([A-HJ-NPR-Z0-9]{17})\b/)?.[1] || "";
+  let vehicleName = textValueNearLabel(lines, /MARCA\s*\/?\s*MODELO(?:\s*\/?\s*VERSAO)?/);
+  if (/^(19|20)\d{2}\b/.test(vehicleName)) vehicleName = "";
+  const name = splitVehicleName(vehicleName);
+  const yearPair = compact.match(/ANO\s+(?:DE\s+)?FABRICACAO.{0,120}?ANO\s+(?:DO\s+)?MODELO.{0,120}?\b((?:19|20)\d{2})\b.{0,30}?\b((?:19|20)\d{2})\b/) || compact.match(/\b((?:19|20)\d{2})\s*[\/-]\s*((?:19|20)\d{2})\b/);
+  const color = textValueNearLabel(lines, /COR(?:\s+PREDOMINANTE)?/).split(/\s{2,}/)[0];
+  const fuel = textValueNearLabel(lines, /COMBUSTIVEL/).split(/\s{2,}/)[0];
+  return { plate, renavam, chassis, brand: name.brand, model: name.model, year: yearPair?.[1] || "", modelYear: yearPair?.[2] || "", color, fuel };
+}
+
+async function loadTesseract() {
+  if (window.Tesseract) return window.Tesseract;
+  await new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = tesseractUrl;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Não foi possível carregar o leitor de fotos."));
+    document.head.append(script);
+  });
+  return window.Tesseract;
+}
+
+async function recognizeDocumentImage(image) {
+  const Tesseract = await loadTesseract();
+  const worker = await Tesseract.createWorker("por", 1, { logger: progress => {
+    if (progress.status === "recognizing text") message("#crlv-message", `Lendo a foto: ${Math.round((progress.progress || 0) * 100)}%`);
+  } });
+  try {
+    const result = await worker.recognize(image);
+    return result.data.text || "";
+  } finally {
+    await worker.terminate();
+  }
+}
+
+async function extractPdfText(file) {
+  const pdfjs = await import(pdfJsUrl);
+  pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+  const pages = [];
+  for (let pageNumber = 1; pageNumber <= Math.min(pdf.numPages, 2); pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const content = await page.getTextContent();
+    const rows = new Map();
+    content.items.forEach(item => {
+      const y = Math.round(item.transform?.[5] || 0);
+      rows.set(y, `${rows.get(y) || ""} ${item.str || ""}`.trim());
+    });
+    pages.push([...rows.entries()].sort((a, b) => b[0] - a[0]).map(([, text]) => text).join("\n"));
+  }
+  const text = pages.join("\n");
+  if (text.replace(/\s/g, "").length >= 80) return text;
+  const firstPage = await pdf.getPage(1);
+  const viewport = firstPage.getViewport({ scale: 2 });
+  const canvas = document.createElement("canvas");
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  await firstPage.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+  return recognizeDocumentImage(canvas);
+}
+
+function fillCrlvData(data) {
+  const fields = [
+    ["#admin-plate", data.plate], ["#admin-brand", data.brand], ["#admin-model", data.model],
+    ["#admin-year", data.year], ["#admin-model-year", data.modelYear], ["#admin-color", data.color],
+    ["#admin-fuel", data.fuel], ["#admin-renavam", data.renavam], ["#admin-chassis", data.chassis]
+  ];
+  let filled = 0;
+  fields.forEach(([selector, value]) => { if (value) { $(selector).value = value; filled += 1; } });
+  return filled;
+}
+
+async function processCrlvFile(file) {
+  if (file.size > 20 * 1024 * 1024) throw new Error("O documento deve ter no máximo 20 MB.");
+  const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+  message("#crlv-message", isPdf ? "Lendo o PDF..." : "Preparando a leitura da foto...");
+  const text = isPdf ? await extractPdfText(file) : await recognizeDocumentImage(file);
+  const filled = fillCrlvData(parseCrlvText(text));
+  if (!filled) throw new Error("Não consegui reconhecer os dados. Tente um PDF digital ou uma foto mais nítida.");
+  return filled;
+}
+
+function addPhotoFiles(files) {
+  const existing = new Set(photoItems.filter(item => item.type === "file").map(item => `${item.value.name}:${item.value.size}:${item.value.lastModified}`));
+  let added = 0;
+  files.forEach(file => {
+    const signature = `${file.name}:${file.size}:${file.lastModified}`;
+    if (existing.has(signature)) return;
+    existing.add(signature);
+    photoItems.push({ id: crypto.randomUUID(), type: "file", value: file, preview: URL.createObjectURL(file) });
+    added += 1;
+  });
+  renderExistingImages();
+  return added;
+}
+
+function findVehicleDocument(files) {
+  const pdfs = files.filter(file => file.type === "application/pdf" || /\.pdf$/i.test(file.name));
+  return pdfs.find(file => normalizedText(file.name).includes("crlv"))
+    || pdfs.find(file => /(extrato|document)/.test(normalizedText(file.name)))
+    || pdfs[0]
+    || files.find(file => file.type.startsWith("image/") && /(crlv|documento|document|doc\b)/.test(normalizedText(file.name)));
+}
+
 function parseBRMoney(value = "") {
   let clean = String(value).replace(/[^\d,.-]/g, "");
   if (clean.includes(",")) clean = clean.replace(/\./g, "").replace(",", ".");
@@ -378,6 +527,7 @@ function openForm(vehicle = null, tab = "essential") {
   updateMetricsPreview(vehicle || {});
   message("#vehicle-message");
   message("#bulk-cost-message");
+  message("#crlv-message");
   switchFormTab(tab);
   $("#vehicle-form-modal").showModal();
 }
@@ -499,9 +649,39 @@ $$('.admin-modal-close').forEach(button => button.addEventListener("click", () =
 $("#existing-images").insertAdjacentHTML("beforebegin", '<p class="photo-order-help">Arraste as fotos para organizar. A primeira imagem será a capa principal.</p>');
 
 $("#admin-images").addEventListener("change", event => {
-  [...event.target.files].forEach(file => photoItems.push({ id: crypto.randomUUID(), type: "file", value: file, preview: URL.createObjectURL(file) }));
+  addPhotoFiles([...event.target.files]);
   event.target.value = "";
-  renderExistingImages();
+});
+$("#crlv-file").addEventListener("change", async event => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    const filled = await processCrlvFile(file);
+    message("#crlv-message", `${filled} campo(s) preenchido(s). Confira os dados antes de salvar.`);
+  } catch (error) {
+    message("#crlv-message", error.message || "Não foi possível ler este documento.");
+  } finally {
+    event.target.value = "";
+  }
+});
+$("#vehicle-folder").addEventListener("change", async event => {
+  const files = [...event.target.files];
+  if (!files.length) return;
+  if (files.length > 300) { message("#crlv-message", "A pasta deve ter no máximo 300 arquivos."); event.target.value = ""; return; }
+  const documentFile = findVehicleDocument(files);
+  const photos = files.filter(file => file.type.startsWith("image/") && file !== documentFile);
+  const videoCount = files.filter(file => file.type.startsWith("video/")).length;
+  const addedPhotos = addPhotoFiles(photos);
+  try {
+    const filled = documentFile ? await processCrlvFile(documentFile) : 0;
+    const parts = [filled ? `${filled} campo(s) preenchido(s)` : "Nenhum CRLV encontrado", `${addedPhotos} foto(s) adicionada(s)`];
+    if (videoCount) parts.push(`${videoCount} vídeo(s) mantido(s) somente na pasta`);
+    message("#crlv-message", `${parts.join(" · ")}. Confira antes de salvar.`);
+  } catch (error) {
+    message("#crlv-message", `${error.message || "Não foi possível ler o documento."} ${addedPhotos} foto(s) adicionada(s).`);
+  } finally {
+    event.target.value = "";
+  }
 });
 $("#add-cost-item").addEventListener("click", () => { costItems.push({ category: "", description: "", amount: null, date: today(), note: "" }); renderCostRows(); });
 $("#import-costs").addEventListener("click", () => {

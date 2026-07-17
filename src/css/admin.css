@@ -56,6 +56,9 @@
 .soft-panel{display:grid;gap:4px;margin-bottom:18px;padding:14px;border:1px solid #f3d581;border-radius:10px;background:#fff9ea;color:#735410}
 .soft-panel strong{font-size:.8rem}
 .soft-panel span{font-size:.75rem}
+.crlv-import{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px 16px;margin-bottom:18px;padding:16px;border:1px solid #b7c8dc;border-left:4px solid #315f8c;border-radius:8px;background:#f4f8fc}
+.crlv-import>div strong,.crlv-import>div span{display:block}.crlv-import>div strong{color:var(--navy);font-size:.82rem}.crlv-import>div span{margin-top:3px;color:var(--muted);font-size:.72rem}
+.crlv-import label{margin:0}.crlv-actions{display:flex;gap:8px}.crlv-import p{grid-column:1/-1;min-height:0;margin:0;color:#315f8c;font-size:.72rem;font-weight:800}.crlv-import p:not(:empty){padding-top:4px}
 .cost-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0 12px}
 .cost-toolbar strong,.cost-toolbar span{display:block}
 .cost-toolbar span{margin-top:3px;color:var(--muted);font-size:.75rem}
@@ -72,6 +75,7 @@
 .metrics-grid strong{margin-top:4px;color:var(--navy);font-size:1.25rem}
 @media(max-width:900px){.dashboard-cards,.management-strip,.metrics-grid{grid-template-columns:repeat(2,1fr)}.cost-row{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.dashboard-cards,.management-strip,.metrics-grid,.cost-row{grid-template-columns:1fr}.form-tabs{margin:-20px -16px 18px;padding:12px 16px}.cost-toolbar{align-items:stretch;flex-direction:column}.cost-toolbar .filter-clear{width:100%}.bulk-cost-import>div{align-items:stretch;flex-direction:column}.bulk-cost-import select,.bulk-cost-import .button{width:100%}}
+@media(max-width:560px){.crlv-import{grid-template-columns:1fr}.crlv-actions{flex-direction:column}.crlv-import .button{width:100%;text-align:center}.crlv-import p{grid-column:1}}
 
 /* Visão gerencial, despesas e documentos */
 .insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:30px}

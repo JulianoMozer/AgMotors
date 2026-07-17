@@ -114,6 +114,11 @@
       <div class="form-tabs" role="tablist" aria-label="Dados do veículo"><button class="active" type="button" data-form-tab="essential">Essencial</button><button type="button" data-form-tab="details">Dados</button><button type="button" data-form-tab="costs">Custos</button><button type="button" data-form-tab="sale">Venda</button><button type="button" data-form-tab="buyer">Comprador</button><button type="button" data-form-tab="metrics">Métricas</button></div>
 
       <section class="form-panel active" data-form-panel="essential">
+        <div class="crlv-import">
+          <div><strong>Preencher pelo CRLV</strong><span>Documento avulso ou pasta completa do carro</span></div>
+          <div class="crlv-actions"><label class="button button-ghost">Selecionar documento<input id="crlv-file" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" hidden></label><label class="button button-primary">Selecionar pasta do carro<input id="vehicle-folder" type="file" webkitdirectory multiple hidden></label></div>
+          <p id="crlv-message" aria-live="polite"></p>
+        </div>
         <div class="admin-form-grid">
           <label>Placa <small>Recomendada para evitar duplicidade</small><input id="admin-plate" maxlength="8" placeholder="ABC1D23"></label>
           <label>Status<select id="admin-form-status"><option value="available">Disponível no site</option><option value="reserved">Reservado</option><option value="sold">Vendido</option><option value="hidden">Oculto do site</option></select></label>
