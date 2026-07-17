@@ -128,6 +128,9 @@
           <label>Ano do modelo<input id="admin-model-year" type="number" min="1900" max="2100" required></label>
           <label>Preço anunciado (R$)<input id="admin-price" type="number" min="0" step="0.01" required></label>
           <label>Quilometragem<input id="admin-mileage" type="number" min="0" step="1"></label>
+          <label>Câmbio<input id="admin-transmission" placeholder="Manual ou automático"></label>
+          <label>Combustível<input id="admin-fuel" placeholder="Flex, gasolina..."></label>
+          <label>Cor<input id="admin-color"></label>
         </div>
         <div class="photo-guide-entry"><div><strong>Roteiro AG Motors</strong><span>Fotografe na ordem padrão usando a câmera do celular.</span></div><button class="button button-primary" id="open-photo-guide" type="button">Fotografar com roteiro</button></div>
         <label>Fotos <small>A primeira será a capa</small><input id="admin-images" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
@@ -136,11 +139,13 @@
       </section>
 
       <section class="form-panel" data-form-panel="details">
-        <div class="admin-form-grid"><label>Câmbio<input id="admin-transmission" placeholder="Manual ou automático"></label><label>Combustível<input id="admin-fuel" placeholder="Flex, gasolina..."></label><label>Cor<input id="admin-color"></label><label>Código interno<input id="admin-internal-code" placeholder="Opcional"></label><label>Renavam<input id="admin-renavam" inputmode="numeric" placeholder="Opcional"></label><label>Chassi<input id="admin-chassis" maxlength="17" placeholder="Opcional"></label></div>
+        <div class="soft-panel"><strong>Documento e contrato.</strong><span>Renavam e chassi ficam guardados para a ficha e os documentos de venda; não aparecem no anúncio público.</span></div>
+        <div class="admin-form-grid"><label>Código interno<input id="admin-internal-code" placeholder="Opcional"></label><label>Renavam<input id="admin-renavam" inputmode="numeric" placeholder="Opcional"></label><label>Chassi<input id="admin-chassis" maxlength="17" placeholder="Opcional"></label></div>
         <label>Opcionais <small>Um por linha</small><textarea id="admin-features" rows="4"></textarea></label>
         <div class="ad-assistant">
           <div class="ad-assistant-heading"><div><strong>Assistente do anúncio</strong><span>Use um texto-base ou leve os dados organizados para o GPT.</span></div><div class="ad-style" role="group" aria-label="Estilo do anúncio"><button class="active" type="button" data-ad-style="objective">Objetivo</button><button type="button" data-ad-style="complete">Completo</button><button type="button" data-ad-style="commercial">Comercial</button></div></div>
-          <div class="ad-assistant-actions"><button class="button button-ghost" id="generate-base-description" type="button">Criar texto-base</button><button class="button button-primary" id="copy-ad-prompt" type="button">Copiar prompt para o GPT</button><a class="button button-ghost" href="https://chatgpt.com/" target="_blank" rel="noopener">Abrir ChatGPT</a></div>
+          <div class="ad-assistant-actions"><button class="button button-ghost" id="generate-base-description" type="button">Criar texto-base</button><button class="button button-primary" id="copy-ad-prompt" type="button">Copiar prompt para o GPT</button><button class="button button-ghost" id="open-chatgpt" type="button">Copiar e abrir ChatGPT</button></div>
+          <label class="ad-prompt-preview" id="ad-prompt-preview-wrap" hidden>Prompt pronto<textarea id="ad-prompt-preview" rows="7" readonly></textarea></label>
           <p id="ad-assistant-message" aria-live="polite"></p>
         </div>
         <label>Descrição do anúncio<textarea id="admin-description" rows="7" placeholder="Crie o texto-base ou cole aqui a descrição preparada pelo GPT."></textarea></label>
@@ -194,8 +199,9 @@
         <div class="traffic-panel"><strong>Origem das visualizações</strong><div class="insight-list" id="metric-sources"></div></div>
       </section>
 
+      <div class="draft-row"><p class="draft-status" id="draft-status" aria-live="polite"></p><button class="filter-clear" id="discard-vehicle-draft" type="button" hidden>Descartar rascunho</button></div>
       <p class="form-message" id="vehicle-message" role="alert"></p>
-      <div class="form-actions"><button class="button button-ghost admin-modal-close" type="button">Cancelar</button><button class="button button-primary" type="submit">Salvar veículo</button></div>
+      <div class="form-actions"><button class="button button-ghost admin-modal-close" type="button">Fechar</button><button class="button button-primary" type="submit">Salvar veículo</button></div>
     </form>
   </dialog>
 

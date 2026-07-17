@@ -28,6 +28,9 @@ export const database = {
   async signIn(email, password) {
     return request("/auth/v1/token?grant_type=password", { method: "POST", body: JSON.stringify({ email, password }) });
   },
+  async refreshSession(refreshToken) {
+    return request("/auth/v1/token?grant_type=refresh_token", { method: "POST", body: JSON.stringify({ refresh_token: refreshToken }) });
+  },
   async saveVehicle(vehicle, token) {
     const { id, ...payload } = vehicle;
     const path = id ? `/rest/v1/vehicles?id=eq.${encodeURIComponent(id)}` : "/rest/v1/vehicles";

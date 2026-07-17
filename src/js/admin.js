@@ -7,11 +7,14 @@ const dateTime = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyl
 const dateOnly = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" });
 const today = () => new Date().toISOString().slice(0, 10);
 const fallbackCover = "img/showroom-ag-motors.jpg";
+const vehicleDraftKey = "ag-vehicle-draft-v1";
+const draftDatabaseName = "ag-motors-drafts";
 const statusLabels = { available: "Disponível", reserved: "Reservado", sold: "Vendido", hidden: "Oculto" };
 const leadStatusLabels = { novo: "Novo", em_atendimento: "Em atendimento", finalizado: "Finalizado" };
 const sourceLabels = { direct: "Direto", google: "Google", instagram: "Instagram", facebook: "Facebook", referral: "Indicação", other: "Outros" };
 
-let token = sessionStorage.getItem("ag-admin-token") || "";
+let token = localStorage.getItem("ag-admin-token") || sessionStorage.getItem("ag-admin-token") || "";
+if (token && !localStorage.getItem("ag-admin-token")) localStorage.setItem("ag-admin-token", token);
 let vehicles = [];
 let financingLeads = [];
 let storeExpenses = [];
@@ -22,6 +25,9 @@ let draggedPhotoId = "";
 let costItems = [];
 let activeVehicle = null;
 let photoGuideIndex = 0;
+let draftSaveTimer = 0;
+let draftAutoOpened = false;
+let sessionRefreshAttempted = false;
 
 const photoGuideSteps = [
   { title: "Dianteira diagonal esquerda", note: "Enquadre o carro inteiro, formando a primeira ponta da flecha para dentro.", x: 18, y: 18 },
@@ -84,7 +90,19 @@ function toast(text) {
   element.classList.add("show");
   setTimeout(() => element.classList.remove("show"), 3400);
 }
-function setSession(authToken) { token = authToken; sessionStorage.setItem("ag-admin-token", authToken); }
+function setSession(session) {
+  token = session.access_token;
+  sessionStorage.setItem("ag-admin-token", token);
+  localStorage.setItem("ag-admin-token", token);
+  if (session.refresh_token) localStorage.setItem("ag-admin-refresh-token", session.refresh_token);
+  const expiresAt = session.expires_at ? Number(session.expires_at) * 1000 : Date.now() + (Number(session.expires_in) || 3600) * 1000;
+  localStorage.setItem("ag-admin-expires-at", String(expiresAt));
+}
+function clearSession() {
+  token = "";
+  sessionStorage.removeItem("ag-admin-token");
+  ["ag-admin-token", "ag-admin-refresh-token", "ag-admin-expires-at"].forEach(key => localStorage.removeItem(key));
+}
 function showLogin() { $("#login-view").hidden = false; $("#admin-view").hidden = true; }
 function showAdmin() {
   $("#login-view").hidden = true;
@@ -93,13 +111,36 @@ function showAdmin() {
   switchView(sessionStorage.getItem("ag-admin-view") || "inventory");
 }
 
+async function restoreAdminSession() {
+  const expiresAt = Number(localStorage.getItem("ag-admin-expires-at")) || 0;
+  if (token && (!expiresAt || expiresAt > Date.now() + 30000)) { showAdmin(); return; }
+  const refreshToken = localStorage.getItem("ag-admin-refresh-token");
+  if (refreshToken) {
+    try { const session = await database.refreshSession(refreshToken); setSession(session); showAdmin(); return; }
+    catch { clearSession(); }
+  }
+  showLogin();
+}
+
 async function loadVehicles() {
   try {
     vehicles = await database.listVehicles({ includeInactive: true, token });
+    sessionRefreshAttempted = false;
     $("#inventory-updated").textContent = lastUpdateText();
     renderInventory();
+    if (!draftAutoOpened && localStorage.getItem(vehicleDraftKey)) {
+      draftAutoOpened = true;
+      openForm();
+    }
   } catch (error) {
-    if (/jwt|token|unauthorized/i.test(error.message)) { sessionStorage.removeItem("ag-admin-token"); showLogin(); }
+    if (/jwt|token|unauthorized/i.test(error.message)) {
+      const refreshToken = localStorage.getItem("ag-admin-refresh-token");
+      if (refreshToken && !sessionRefreshAttempted) {
+        sessionRefreshAttempted = true;
+        try { const session = await database.refreshSession(refreshToken); setSession(session); await loadVehicles(); return; } catch {}
+      }
+      clearSession(); showLogin();
+    }
     else toast(error.message);
   }
 }
@@ -215,7 +256,7 @@ async function loadFinancingLeads() {
     $("#lead-updated").textContent = lastUpdateText();
     renderFinancingLeads();
   } catch (error) {
-    if (/jwt|token|unauthorized/i.test(error.message)) { sessionStorage.removeItem("ag-admin-token"); showLogin(); }
+    if (/jwt|token|unauthorized/i.test(error.message)) { clearSession(); showLogin(); }
     else toast(error.message);
   } finally {
     button.disabled = false;
@@ -338,15 +379,105 @@ function buildAdPrompt(data, style) {
   return `Crie uma descrição em português brasileiro para o anúncio abaixo.\n\n${styleInstructions[style] || styleInstructions.objective}\nUse somente os dados fornecidos. Não invente estado de conservação, revisões, procedência, garantia, opcionais ou qualquer informação ausente. Não use emojis. Entregue somente o texto final do anúncio, pronto para colar no site.\n\nDADOS DO VEÍCULO\n${facts}\n\nLoja: AG Motors Curitiba\nContato: (41) 99615-5327`;
 }
 
-async function copyText(value) {
+async function copyText(value, area = $("#ad-prompt-preview")) {
+  area.value = value;
+  $("#ad-prompt-preview-wrap").hidden = false;
   if (navigator.clipboard?.writeText) {
     try { await navigator.clipboard.writeText(value); return; } catch {}
   }
-  const area = document.createElement("textarea");
-  area.value = value; area.style.position = "fixed"; area.style.opacity = "0";
-  document.body.append(area); area.select();
-  const copied = document.execCommand("copy"); area.remove();
+  area.focus(); area.select(); area.setSelectionRange(0, area.value.length);
+  const copied = document.execCommand("copy");
   if (!copied) throw new Error("Não foi possível copiar o prompt.");
+}
+
+function openDraftDatabase() {
+  if (!window.indexedDB) return Promise.resolve(null);
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(draftDatabaseName, 1);
+    request.onupgradeneeded = () => request.result.createObjectStore("drafts", { keyPath: "id" });
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function saveDraftPhotos() {
+  if ($("#vehicle-id")?.value) return;
+  try {
+    const databaseDraft = await openDraftDatabase();
+    if (!databaseDraft) return;
+    const files = photoItems.filter(item => item.type === "file").map(item => ({ id: item.id, file: item.value, guideStep: item.guideStep }));
+    await new Promise((resolve, reject) => {
+      const transaction = databaseDraft.transaction("drafts", "readwrite");
+      transaction.objectStore("drafts").put({ id: "new-vehicle-photos", files });
+      transaction.oncomplete = resolve; transaction.onerror = () => reject(transaction.error);
+    });
+    databaseDraft.close();
+  } catch { /* O cadastro continua mesmo se o navegador bloquear o armazenamento local. */ }
+}
+
+async function readDraftPhotos() {
+  try {
+    const databaseDraft = await openDraftDatabase();
+    if (!databaseDraft) return [];
+    const result = await new Promise((resolve, reject) => {
+      const request = databaseDraft.transaction("drafts").objectStore("drafts").get("new-vehicle-photos");
+      request.onsuccess = () => resolve(request.result?.files || []); request.onerror = () => reject(request.error);
+    });
+    databaseDraft.close(); return result;
+  } catch { return []; }
+}
+
+function saveVehicleDraft() {
+  if ($("#vehicle-id")?.value) return;
+  const values = {};
+  $$("#vehicle-form input, #vehicle-form select, #vehicle-form textarea").forEach(field => {
+    if (!field.id || field.type === "file" || field.id === "vehicle-id") return;
+    values[field.id] = field.type === "checkbox" ? field.checked : field.value;
+  });
+  localStorage.setItem(vehicleDraftKey, JSON.stringify({ values, costItems, adStyle: currentAdStyle(), savedAt: Date.now() }));
+  if ($("#draft-status")) $("#draft-status").textContent = "Rascunho salvo neste aparelho.";
+  if ($("#discard-vehicle-draft")) $("#discard-vehicle-draft").hidden = false;
+}
+
+function scheduleVehicleDraft() {
+  clearTimeout(draftSaveTimer);
+  draftSaveTimer = setTimeout(saveVehicleDraft, 250);
+}
+
+async function restoreVehicleDraft() {
+  const raw = localStorage.getItem(vehicleDraftKey);
+  if (!raw) return false;
+  try {
+    const draft = JSON.parse(raw);
+    Object.entries(draft.values || {}).forEach(([id, value]) => {
+      const field = $(`#${id}`);
+      if (!field || field.type === "file" || id === "vehicle-id") return;
+      if (field.type === "checkbox") field.checked = Boolean(value); else field.value = value ?? "";
+    });
+    costItems = Array.isArray(draft.costItems) ? draft.costItems : [];
+    $$("[data-ad-style]").forEach(button => button.classList.toggle("active", button.dataset.adStyle === (draft.adStyle || "objective")));
+    const files = await readDraftPhotos();
+    photoItems = files.map(item => ({ id: item.id || crypto.randomUUID(), type: "file", value: item.file, preview: URL.createObjectURL(item.file), guideStep: item.guideStep }));
+    if ($("#ad-prompt-preview").value) $("#ad-prompt-preview-wrap").hidden = false;
+    $("#draft-status").textContent = "Rascunho recuperado. Continue de onde parou.";
+    $("#discard-vehicle-draft").hidden = false;
+    return true;
+  } catch { localStorage.removeItem(vehicleDraftKey); return false; }
+}
+
+async function clearVehicleDraft() {
+  localStorage.removeItem(vehicleDraftKey);
+  if ($("#discard-vehicle-draft")) $("#discard-vehicle-draft").hidden = true;
+  try {
+    const databaseDraft = await openDraftDatabase();
+    if (!databaseDraft) return;
+    await new Promise((resolve, reject) => {
+      const transaction = databaseDraft.transaction("drafts", "readwrite");
+      transaction.objectStore("drafts").delete("new-vehicle-photos");
+      transaction.oncomplete = resolve; transaction.onerror = () => reject(transaction.error);
+    });
+    databaseDraft.close();
+  } catch {}
 }
 
 const pdfJsUrl = "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.149/build/pdf.min.mjs";
@@ -380,11 +511,41 @@ function textValueNearLabel(lines, labelPattern) {
   return "";
 }
 
+function nearbyDocumentText(lines, labelPattern, lookAhead = 4) {
+  const index = lines.findIndex(line => labelPattern.test(line));
+  return index < 0 ? "" : lines.slice(index, index + lookAhead + 1).join(" ");
+}
+
+function recognizedColor(value) {
+  const match = String(value).match(/\b(BRANCA|PRETA|PRATA|CINZA|AZUL|VERMELHA|VERDE|AMARELA|MARROM|BEGE|DOURADA|LARANJA|ROXA|FANTASIA)\b/);
+  return match ? match[1].charAt(0) + match[1].slice(1).toLowerCase() : "";
+}
+
+function recognizedFuel(value) {
+  const match = String(value).match(/\b(GASOLINA\s*\/\s*ALCOOL|ALCOOL\s*\/\s*GASOLINA|FLEX|GASOLINA|ALCOOL|ETANOL|DIESEL|ELETRICO|HIBRIDO|GNV)\b/);
+  if (!match) return "";
+  const fuel = match[1].replace(/\s/g, "");
+  const labels = { "GASOLINA/ALCOOL": "Flex", "ALCOOL/GASOLINA": "Flex", FLEX: "Flex", GASOLINA: "Gasolina", ALCOOL: "Álcool", ETANOL: "Etanol", DIESEL: "Diesel", ELETRICO: "Elétrico", HIBRIDO: "Híbrido", GNV: "GNV" };
+  return labels[fuel] || fuel;
+}
+
+function recognizedTransmission(value) {
+  const match = String(value).match(/\b(AUTOMATICO|AUTOMATICA|MANUAL|CVT|AUTOMATIZADO|AUTOMATIZADA)\b/);
+  if (!match) return "";
+  if (/AUTOMATIC/.test(match[1])) return "Automático";
+  if (/AUTOMATIZAD/.test(match[1])) return "Automatizado";
+  return match[1] === "MANUAL" ? "Manual" : "CVT";
+}
+
 function splitVehicleName(value) {
   let clean = String(value || "").replace(/^(I|N)\//, "").replace(/\s+/g, " ").trim();
   if (!clean) return { brand: "", model: "" };
   const slash = clean.indexOf("/");
-  if (slash > 0) return { brand: clean.slice(0, slash).trim(), model: clean.slice(slash + 1).trim() };
+  const normalizeBrandName = brand => /^(MERCEDES(?:-|\s*)BENZ|M\.BENZ)$/i.test(brand) ? "Mercedes-Benz" : brand;
+  if (slash > 0) return { brand: normalizeBrandName(clean.slice(0, slash).trim()), model: clean.slice(slash + 1).trim() };
+  const multiwordBrands = [[/^MERCEDES(?:-|\s+)BENZ\s+/i, "Mercedes-Benz"], [/^LAND ROVER\s+/i, "Land Rover"], [/^ALFA ROMEO\s+/i, "Alfa Romeo"]];
+  const known = multiwordBrands.find(([pattern]) => pattern.test(clean));
+  if (known) return { brand: known[1], model: clean.replace(known[0], "").trim() };
   const [brand, ...model] = clean.split(" ");
   return { brand, model: model.join(" ") };
 }
@@ -397,11 +558,13 @@ function parseCrlvText(value) {
   const chassis = valueNearLabel(lines, /CHASSI/, /\b([A-HJ-NPR-Z0-9]{17})\b/, 6) || compact.match(/\b([A-HJ-NPR-Z0-9]{17})\b/)?.[1] || "";
   let vehicleName = textValueNearLabel(lines, /MARCA\s*\/?\s*MODELO(?:\s*\/?\s*VERSAO)?/);
   if (/^(19|20)\d{2}\b/.test(vehicleName)) vehicleName = "";
+  vehicleName = vehicleName.replace(/\s+(?:19|20)\d{2}\s+(?:19|20)\d{2}(?:\s.*)?$/, "").trim();
   const name = splitVehicleName(vehicleName);
   const yearPair = compact.match(/ANO\s+(?:DE\s+)?FABRICACAO.{0,120}?ANO\s+(?:DO\s+)?MODELO.{0,120}?\b((?:19|20)\d{2})\b.{0,30}?\b((?:19|20)\d{2})\b/) || compact.match(/\b((?:19|20)\d{2})\s*[\/-]\s*((?:19|20)\d{2})\b/);
-  const color = textValueNearLabel(lines, /COR(?:\s+PREDOMINANTE)?/).split(/\s{2,}/)[0];
-  const fuel = textValueNearLabel(lines, /COMBUSTIVEL/).split(/\s{2,}/)[0];
-  return { plate, renavam, chassis, brand: name.brand, model: name.model, year: yearPair?.[1] || "", modelYear: yearPair?.[2] || "", color, fuel };
+  const color = recognizedColor(nearbyDocumentText(lines, /COR(?:\s+PREDOMINANTE)?/, 5)) || recognizedColor(textValueNearLabel(lines, /COR(?:\s+PREDOMINANTE)?/));
+  const fuel = recognizedFuel(nearbyDocumentText(lines, /COMBUSTIVEL/, 5)) || recognizedFuel(textValueNearLabel(lines, /COMBUSTIVEL/));
+  const transmission = recognizedTransmission(nearbyDocumentText(lines, /CAMBIO|TRANSMISSAO/, 3));
+  return { plate, renavam, chassis, brand: name.brand, model: name.model, year: yearPair?.[1] || "", modelYear: yearPair?.[2] || "", color, fuel, transmission };
 }
 
 async function loadTesseract() {
@@ -459,11 +622,23 @@ function fillCrlvData(data) {
   const fields = [
     ["#admin-plate", data.plate], ["#admin-brand", data.brand], ["#admin-model", data.model],
     ["#admin-year", data.year], ["#admin-model-year", data.modelYear], ["#admin-color", data.color],
-    ["#admin-fuel", data.fuel], ["#admin-renavam", data.renavam], ["#admin-chassis", data.chassis]
+    ["#admin-fuel", data.fuel], ["#admin-transmission", data.transmission], ["#admin-renavam", data.renavam], ["#admin-chassis", data.chassis]
   ];
   let filled = 0;
   fields.forEach(([selector, value]) => { if (value) { $(selector).value = value; filled += 1; } });
   return filled;
+}
+
+function markMissingAdFields() {
+  const fields = [["#admin-transmission", "câmbio"], ["#admin-fuel", "combustível"], ["#admin-color", "cor"]];
+  const missing = [];
+  fields.forEach(([selector, label]) => {
+    const input = $(selector);
+    const empty = !input.value.trim();
+    input.closest("label")?.classList.toggle("field-needs-confirmation", empty);
+    if (empty) missing.push(label);
+  });
+  return missing;
 }
 
 async function processCrlvFile(file) {
@@ -471,9 +646,12 @@ async function processCrlvFile(file) {
   const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
   message("#crlv-message", isPdf ? "Lendo o PDF..." : "Preparando a leitura da foto...");
   const text = isPdf ? await extractPdfText(file) : await recognizeDocumentImage(file);
-  const filled = fillCrlvData(parseCrlvText(text));
+  const data = parseCrlvText(text);
+  const filled = fillCrlvData(data);
   if (!filled) throw new Error("Não consegui reconhecer os dados. Tente um PDF digital ou uma foto mais nítida.");
-  return filled;
+  const missing = markMissingAdFields();
+  saveVehicleDraft();
+  return { filled, data, missing };
 }
 
 function addPhotoFiles(files) {
@@ -487,6 +665,7 @@ function addPhotoFiles(files) {
     added += 1;
   });
   renderExistingImages();
+  saveVehicleDraft(); saveDraftPhotos();
   return added;
 }
 
@@ -527,6 +706,7 @@ function addGuidedPhoto(file, stepIndex) {
   photoItems.push({ id: crypto.randomUUID(), type: "file", value: file, preview: URL.createObjectURL(file), guideStep: stepIndex });
   sortGuidedPhotos();
   renderExistingImages();
+  saveVehicleDraft(); saveDraftPhotos();
 }
 
 function renderPhotoGuide() {
@@ -647,13 +827,16 @@ function renderExistingImages() {
   $("#existing-images").innerHTML = photoItems.map((item, index) => `<div class="existing-image" draggable="true" data-photo-id="${item.id}"><span class="drag-handle" title="Arraste para ordenar" aria-hidden="true">↕</span>${index === 0 ? '<span class="cover-label">Capa principal</span>' : `<span class="photo-position">${index + 1}</span>`}<img src="${escapeHTML(item.preview)}" alt="Foto ${index + 1}"><button type="button" data-remove-photo="${item.id}" aria-label="Remover foto">×</button></div>`).join("");
 }
 
-function openForm(vehicle = null, tab = "essential") {
+async function openForm(vehicle = null, tab = "essential") {
   photoItems.filter(item => item.type === "file").forEach(item => URL.revokeObjectURL(item.preview));
   $("#vehicle-form").reset();
   activeVehicle = vehicle;
   photoItems = [];
   originalImages = [];
   costItems = [];
+  $("#draft-status").textContent = "";
+  $("#discard-vehicle-draft").hidden = true;
+  $("#ad-prompt-preview-wrap").hidden = true;
   $("#form-title").textContent = vehicle ? "Editar veículo" : "Cadastrar veículo";
   $("#vehicle-id").value = vehicle?.id || "";
   if (vehicle) {
@@ -683,6 +866,9 @@ function openForm(vehicle = null, tab = "essential") {
     photoItems = originalImages.map(url => ({ id: crypto.randomUUID(), type: "url", value: url, preview: url }));
   } else {
     $("#admin-form-status").value = "available";
+    $$("[data-ad-style]").forEach(button => button.classList.toggle("active", button.dataset.adStyle === "objective"));
+    await restoreVehicleDraft();
+    if ($("#admin-renavam").value || $("#admin-chassis").value) markMissingAdFields();
   }
   renderCostRows();
   renderExistingImages();
@@ -691,9 +877,8 @@ function openForm(vehicle = null, tab = "essential") {
   message("#bulk-cost-message");
   message("#crlv-message");
   message("#ad-assistant-message");
-  $$("[data-ad-style]").forEach(button => button.classList.toggle("active", button.dataset.adStyle === "objective"));
   switchFormTab(tab);
-  $("#vehicle-form-modal").showModal();
+  if (!$("#vehicle-form-modal").open) $("#vehicle-form-modal").showModal();
 }
 
 function slugify(text) {
@@ -762,10 +947,10 @@ function generateDocument(kind) {
 $("#login-form").addEventListener("submit", async event => {
   event.preventDefault();
   message("#login-message", "Entrando...");
-  try { const session = await database.signIn($("#login-email").value, $("#login-password").value); setSession(session.access_token); message("#login-message"); showAdmin(); }
+  try { const session = await database.signIn($("#login-email").value, $("#login-password").value); setSession(session); message("#login-message"); showAdmin(); }
   catch (error) { message("#login-message", error.message); }
 });
-$("#logout-button").addEventListener("click", () => { sessionStorage.removeItem("ag-admin-token"); token = ""; showLogin(); });
+$("#logout-button").addEventListener("click", () => { clearSession(); showLogin(); });
 $$('[data-view]').forEach(button => button.addEventListener("click", () => switchView(button.dataset.view)));
 $$('[data-form-tab]').forEach(button => button.addEventListener("click", () => switchFormTab(button.dataset.formTab)));
 $("#new-vehicle").addEventListener("click", () => openForm());
@@ -807,25 +992,45 @@ $("#admin-form-status").addEventListener("change", event => {
 $("#admin-plate").addEventListener("input", event => { event.target.value = normalizePlate(event.target.value); });
 $("#admin-buyer-cpf").addEventListener("input", event => { event.target.value = formatCPF(event.target.value); });
 $("#admin-buyer-phone").addEventListener("input", event => { event.target.value = formatPhone(event.target.value); });
+["#admin-transmission", "#admin-fuel", "#admin-color"].forEach(selector => $(selector).addEventListener("input", event => event.target.closest("label")?.classList.remove("field-needs-confirmation")));
+$("#vehicle-form").addEventListener("input", scheduleVehicleDraft);
+$("#vehicle-form").addEventListener("change", scheduleVehicleDraft);
 $$('[data-document]').forEach(button => button.addEventListener("click", () => generateDocument(button.dataset.document)));
 $$("[data-ad-style]").forEach(button => button.addEventListener("click", () => {
   $$("[data-ad-style]").forEach(item => item.classList.toggle("active", item === button));
   message("#ad-assistant-message");
+  saveVehicleDraft();
 }));
 $("#generate-base-description").addEventListener("click", () => {
   try {
     if ($("#admin-description").value.trim() && !window.confirm("Substituir a descrição atual pelo novo texto-base?")) return;
     $("#admin-description").value = buildBaseDescription(vehicleAdData(), currentAdStyle());
     message("#ad-assistant-message", "Texto-base criado. Revise e ajuste antes de publicar.");
+    saveVehicleDraft();
   } catch (error) { message("#ad-assistant-message", error.message); }
 });
 $("#copy-ad-prompt").addEventListener("click", async () => {
   try {
-    await copyText(buildAdPrompt(vehicleAdData(), currentAdStyle()));
-    message("#ad-assistant-message", "Prompt copiado. Abra o ChatGPT, cole e depois traga a descrição pronta.");
-  } catch (error) { message("#ad-assistant-message", error.message || "Não foi possível copiar o prompt."); }
+    const prompt = buildAdPrompt(vehicleAdData(), currentAdStyle());
+    await copyText(prompt); saveVehicleDraft();
+    message("#ad-assistant-message", "Prompt copiado. Ele também ficou visível abaixo para conferência.");
+  } catch (error) { message("#ad-assistant-message", `${error.message || "Não foi possível copiar."} O prompt ficou visível abaixo para copiar manualmente.`); }
+});
+$("#open-chatgpt").addEventListener("click", async () => {
+  try {
+    const prompt = buildAdPrompt(vehicleAdData(), currentAdStyle());
+    const copyPromise = copyText(prompt);
+    saveVehicleDraft(); saveDraftPhotos();
+    const popup = window.open("https://chatgpt.com/", "_blank");
+    await copyPromise;
+    message("#ad-assistant-message", popup ? "Prompt copiado e rascunho salvo. Cole no ChatGPT." : "Prompt copiado e rascunho salvo. O navegador bloqueou a nova aba.");
+  } catch (error) { message("#ad-assistant-message", `${error.message || "Não foi possível copiar."} O rascunho continua salvo.`); }
 });
 $("#add-buyer").addEventListener("click", () => switchFormTab("buyer"));
+$("#discard-vehicle-draft").addEventListener("click", async () => {
+  if (!window.confirm("Descartar este cadastro incompleto e suas fotos?")) return;
+  await clearVehicleDraft(); await openForm(); toast("Rascunho descartado.");
+});
 $$('.admin-modal-close').forEach(button => button.addEventListener("click", () => $("#vehicle-form-modal").close()));
 $("#existing-images").insertAdjacentHTML("beforebegin", '<p class="photo-order-help">Arraste as fotos para organizar. A primeira imagem será a capa principal.</p>');
 
@@ -852,8 +1057,9 @@ $("#crlv-file").addEventListener("change", async event => {
   const file = event.target.files?.[0];
   if (!file) return;
   try {
-    const filled = await processCrlvFile(file);
-    message("#crlv-message", `${filled} campo(s) preenchido(s). Confira os dados antes de salvar.`);
+    const result = await processCrlvFile(file);
+    const missing = result.missing.length ? ` Confirme agora: ${result.missing.join(", ")}.` : "";
+    message("#crlv-message", `${result.filled} campo(s) preenchido(s).${missing}`);
   } catch (error) {
     message("#crlv-message", error.message || "Não foi possível ler este documento.");
   } finally {
@@ -869,8 +1075,9 @@ $("#vehicle-folder").addEventListener("change", async event => {
   const videoCount = files.filter(file => file.type.startsWith("video/")).length;
   const addedPhotos = addPhotoFiles(photos);
   try {
-    const filled = documentFile ? await processCrlvFile(documentFile) : 0;
-    const parts = [filled ? `${filled} campo(s) preenchido(s)` : "Nenhum CRLV encontrado", `${addedPhotos} foto(s) adicionada(s)`];
+    const result = documentFile ? await processCrlvFile(documentFile) : null;
+    const parts = [result ? `${result.filled} campo(s) preenchido(s)` : "Nenhum CRLV encontrado", `${addedPhotos} foto(s) adicionada(s)`];
+    if (result?.missing.length) parts.push(`confirme ${result.missing.join(", ")}`);
     if (videoCount) parts.push(`${videoCount} vídeo(s) mantido(s) somente na pasta`);
     message("#crlv-message", `${parts.join(" · ")}. Confira antes de salvar.`);
   } catch (error) {
@@ -879,7 +1086,7 @@ $("#vehicle-folder").addEventListener("change", async event => {
     event.target.value = "";
   }
 });
-$("#add-cost-item").addEventListener("click", () => { costItems.push({ category: "", description: "", amount: null, date: today(), note: "" }); renderCostRows(); });
+$("#add-cost-item").addEventListener("click", () => { costItems.push({ category: "", description: "", amount: null, date: today(), note: "" }); renderCostRows(); saveVehicleDraft(); });
 $("#import-costs").addEventListener("click", () => {
   const parsed = parseBulkCosts($("#bulk-costs").value);
   if (!parsed.items.length && parsed.purchase === null) { message("#bulk-cost-message", "Nenhuma linha com descrição e valor foi reconhecida."); return; }
@@ -890,6 +1097,7 @@ $("#import-costs").addEventListener("click", () => {
   const purchaseText = parsed.purchase !== null ? " e preço de compra preenchido" : "";
   const skippedText = parsed.skipped ? ` ${parsed.skipped} linha(s) não reconhecida(s).` : "";
   message("#bulk-cost-message", `${parsed.items.length} custo(s) importado(s)${purchaseText}.${skippedText}`);
+  saveVehicleDraft();
 });
 $("#cost-list").addEventListener("input", event => {
   const row = event.target.closest("[data-cost-index]");
@@ -898,11 +1106,11 @@ $("#cost-list").addEventListener("input", event => {
   costItems[Number(row.dataset.costIndex)][field] = field === "amount" ? toNumberOrNull(event.target.value) : event.target.value;
   updateCostTotal();
 });
-$("#cost-list").addEventListener("click", event => { const button = event.target.closest("[data-remove-cost]"); if (button) { costItems.splice(Number(button.dataset.removeCost), 1); renderCostRows(); } });
+$("#cost-list").addEventListener("click", event => { const button = event.target.closest("[data-remove-cost]"); if (button) { costItems.splice(Number(button.dataset.removeCost), 1); renderCostRows(); saveVehicleDraft(); } });
 $("#existing-images").addEventListener("click", event => {
   const button = event.target.closest("[data-remove-photo]"); if (!button) return;
   const index = photoItems.findIndex(item => item.id === button.dataset.removePhoto); if (index < 0) return;
-  const [removed] = photoItems.splice(index, 1); if (removed.type === "file") URL.revokeObjectURL(removed.preview); renderExistingImages();
+  const [removed] = photoItems.splice(index, 1); if (removed.type === "file") URL.revokeObjectURL(removed.preview); renderExistingImages(); saveVehicleDraft(); saveDraftPhotos();
 });
 $("#existing-images").addEventListener("dragstart", event => { const item = event.target.closest("[data-photo-id]"); if (!item) return; draggedPhotoId = item.dataset.photoId; event.dataTransfer.effectAllowed = "move"; requestAnimationFrame(() => item.classList.add("dragging")); });
 $("#existing-images").addEventListener("dragover", event => { const target = event.target.closest("[data-photo-id]"); if (!target || target.dataset.photoId === draggedPhotoId) return; event.preventDefault(); $$(".existing-image.drag-target").forEach(item => item.classList.remove("drag-target")); target.classList.add("drag-target"); });
@@ -911,7 +1119,7 @@ $("#existing-images").addEventListener("drop", event => {
   event.preventDefault(); const from = photoItems.findIndex(item => item.id === draggedPhotoId); if (from < 0) return;
   const [moved] = photoItems.splice(from, 1); let to = photoItems.findIndex(item => item.id === target.dataset.photoId);
   if (event.clientX > target.getBoundingClientRect().left + target.getBoundingClientRect().width / 2) to += 1;
-  photoItems.splice(Math.max(0, to), 0, moved); renderExistingImages();
+  photoItems.splice(Math.max(0, to), 0, moved); renderExistingImages(); saveVehicleDraft(); saveDraftPhotos();
 });
 $("#existing-images").addEventListener("dragend", () => { draggedPhotoId = ""; $$(".existing-image.dragging,.existing-image.drag-target").forEach(item => item.classList.remove("dragging", "drag-target")); });
 
@@ -998,6 +1206,7 @@ $("#vehicle-form").addEventListener("submit", async event => {
     message("#vehicle-message", "Salvando os dados..."); submitButton.textContent = "Salvando...";
     await database.saveVehicle(payload, token);
     await Promise.allSettled(originalImages.filter(url => !images.includes(url)).map(url => database.deleteImage(url, token)));
+    if (!id) await clearVehicleDraft();
     $("#vehicle-form-modal").close(); toast(payload.status === "sold" ? "Venda salva no histórico." : "Veículo salvo com sucesso."); loadVehicles();
   } catch (error) {
     const text = /vehicles_plate_unique|duplicate key/i.test(error.message) ? "Esta placa já está cadastrada." : /schema cache/i.test(error.message) ? `${error.message} Execute a migração atualizada no Supabase.` : error.message;
@@ -1007,4 +1216,4 @@ $("#vehicle-form").addEventListener("submit", async event => {
 
 resetExpenseForm();
 if (!database.configured) { $("#config-alert").hidden = false; $('#login-form button').disabled = true; }
-if (token && database.configured) showAdmin(); else showLogin();
+if (database.configured) restoreAdminSession(); else showLogin();
