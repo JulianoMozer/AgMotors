@@ -126,3 +126,9 @@ button.insight-item:hover{background:#f9fafb}
 .admin-table-wrap .inventory-table{min-width:1055px}
 .admin-modal,.confirm-modal,.photo-guide-modal{margin:auto}
 @media(max-width:760px){.admin-modal,.photo-guide-modal{margin:0}}
+.admin-modal{overflow:hidden}
+.admin-modal form{max-height:calc(92vh - 125px);overflow-x:hidden;overflow-y:auto}
+.form-panel,.crlv-import,.photo-guide-entry,.bulk-cost-import,.ad-assistant,.existing-images,.form-actions,.photo-guide-header,.photo-guide-body,.photo-guide-actions,.photo-guide-map,.photo-guide-detail{min-width:0;max-width:100%}
+.photo-guide-body{overflow-x:hidden}
+.photo-guide-actions .button{min-width:0}
+@media(max-width:760px){.admin-modal form{max-height:none}.form-panel,.crlv-import,.photo-guide-entry,.bulk-cost-import,.ad-assistant,.existing-images,.form-actions{width:100%}.photo-guide-entry{overflow:hidden}.photo-guide-entry>div{width:100%;min-width:0}.photo-guide-entry strong,.photo-guide-entry span{overflow-wrap:anywhere}.photo-guide-map,.photo-guide-detail{width:min(100%,52vh)}.photo-guide-body,.photo-guide-actions{overflow-x:hidden}}

@@ -735,7 +735,12 @@ function openPhotoGuide() {
   const firstMissing = photoGuideSteps.findIndex((step, index) => !guidedPhoto(index));
   photoGuideIndex = firstMissing >= 0 ? firstMissing : 0;
   renderPhotoGuide();
-  $("#photo-guide-modal").showModal();
+  const modal = $("#photo-guide-modal");
+  modal.showModal();
+  requestAnimationFrame(() => {
+    modal.scrollLeft = 0;
+    modal.querySelectorAll(".photo-guide-header, .photo-guide-body, .photo-guide-actions").forEach(element => { element.scrollLeft = 0; });
+  });
 }
 
 function finishPhotoGuide() {
@@ -878,7 +883,12 @@ async function openForm(vehicle = null, tab = "essential") {
   message("#crlv-message");
   message("#ad-assistant-message");
   switchFormTab(tab);
-  if (!$("#vehicle-form-modal").open) $("#vehicle-form-modal").showModal();
+  const modal = $("#vehicle-form-modal");
+  if (!modal.open) modal.showModal();
+  requestAnimationFrame(() => {
+    modal.scrollLeft = 0;
+    modal.querySelectorAll("form, .form-tabs, .form-panel, .crlv-import, .photo-guide-entry, .form-actions").forEach(element => { element.scrollLeft = 0; });
+  });
 }
 
 function slugify(text) {
