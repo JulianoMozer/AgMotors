@@ -124,3 +124,5 @@ button.insight-item:hover{background:#f9fafb}
 @media(max-width:900px){.insight-grid{grid-template-columns:1fr}.expense-form{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.expense-form{grid-template-columns:1fr}.document-actions{display:grid}.document-actions .button{width:100%}.insight-panel>header{align-items:flex-start;flex-direction:column}.insight-panel>header span{text-align:left}.sale-buyer-invite{align-items:stretch;flex-direction:column}.sale-buyer-invite .button{width:100%}}
 .admin-table-wrap .inventory-table{min-width:1055px}
+.admin-modal,.confirm-modal,.photo-guide-modal{margin:auto}
+@media(max-width:760px){.admin-modal,.photo-guide-modal{margin:0}}
