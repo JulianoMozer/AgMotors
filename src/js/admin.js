@@ -731,16 +731,23 @@ function renderPhotoGuide() {
   $("#photo-guide-capture-label").hidden = isLast && captured;
 }
 
+function resetModalScroll(modal, selectors) {
+  const reset = () => {
+    modal.scrollTo(0, 0);
+    modal.querySelectorAll(selectors).forEach(element => element.scrollTo(0, 0));
+  };
+  reset();
+  requestAnimationFrame(() => { reset(); requestAnimationFrame(reset); });
+  setTimeout(reset, 150);
+}
+
 function openPhotoGuide() {
   const firstMissing = photoGuideSteps.findIndex((step, index) => !guidedPhoto(index));
   photoGuideIndex = firstMissing >= 0 ? firstMissing : 0;
   renderPhotoGuide();
   const modal = $("#photo-guide-modal");
   modal.showModal();
-  requestAnimationFrame(() => {
-    modal.scrollLeft = 0;
-    modal.querySelectorAll(".photo-guide-header, .photo-guide-body, .photo-guide-actions").forEach(element => { element.scrollLeft = 0; });
-  });
+  resetModalScroll(modal, ".photo-guide-header, .photo-guide-body, .photo-guide-actions");
 }
 
 function finishPhotoGuide() {
@@ -885,10 +892,7 @@ async function openForm(vehicle = null, tab = "essential") {
   switchFormTab(tab);
   const modal = $("#vehicle-form-modal");
   if (!modal.open) modal.showModal();
-  requestAnimationFrame(() => {
-    modal.scrollLeft = 0;
-    modal.querySelectorAll("form, .form-tabs, .form-panel, .crlv-import, .photo-guide-entry, .form-actions").forEach(element => { element.scrollLeft = 0; });
-  });
+  resetModalScroll(modal, "form, .form-tabs, .form-panel, .crlv-import, .photo-guide-entry, .form-actions");
 }
 
 function slugify(text) {
