@@ -138,6 +138,11 @@
       <section class="form-panel" data-form-panel="costs">
         <div class="soft-panel"><strong>Controle opcional, sem bloqueio.</strong><span>Quem preencher compra e despesas recebe custo real e lucro correto.</span></div>
         <div class="admin-form-grid"><label>Preço de compra (R$)<input id="admin-purchase-price" type="number" min="0" step="0.01"></label><label>Data de compra<input id="admin-purchase-date" type="date"></label></div>
+        <div class="bulk-cost-import">
+          <label>Colar lista de custos<textarea id="bulk-costs" rows="6" placeholder="Latoeiro  R$ 4.000,00&#10;Transferência  R$ 520,00&#10;Compra  R$ 27.272,00"></textarea></label>
+          <div><select id="bulk-cost-mode" aria-label="Modo de importação"><option value="replace">Substituir custos da tela</option><option value="append">Adicionar aos custos atuais</option></select><button class="button button-primary" id="import-costs" type="button">Importar lista</button></div>
+          <p id="bulk-cost-message" aria-live="polite"></p>
+        </div>
         <div class="cost-toolbar"><div><strong>Custos do veículo</strong><span id="cost-total">Total: R$ 0,00</span></div><button class="filter-clear" id="add-cost-item" type="button">Adicionar custo</button></div>
         <div class="cost-list" id="cost-list"></div>
       </section>

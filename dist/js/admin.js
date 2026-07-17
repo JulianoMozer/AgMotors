@@ -263,6 +263,58 @@ function updateMetricsPreview(vehicle = currentFormVehicle()) {
   renderInsightList("#metric-sources", sources.map(([source, count]) => `<div class="insight-item"><span><strong>${escapeHTML(sourceLabels[source] || source)}</strong></span><b>${Number(count) || 0}</b></div>`), "As origens aparecerão após novas visitas.");
 }
 
+function normalizedText(value = "") {
+  return String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
+function parseBRMoney(value = "") {
+  let clean = String(value).replace(/[^\d,.-]/g, "");
+  if (clean.includes(",")) clean = clean.replace(/\./g, "").replace(",", ".");
+  else if (/^-?\d{1,3}(?:\.\d{3})+$/.test(clean)) clean = clean.replace(/\./g, "");
+  const amount = Number(clean);
+  return Number.isFinite(amount) && amount >= 0 ? amount : null;
+}
+
+function inferCostCategory(description) {
+  const text = normalizedText(description);
+  const rules = [
+    [/transfer|document|despach|licenciamento|ipva/, "Despachante/Documentação"],
+    [/lato|funilar|pintur|poliment|para.?choque|parachoque/, "Lataria"],
+    [/mecan|motor|cambio|embreagem|revisao/, "Mecânica"],
+    [/eletric|sensor|modulo|bateria|alternador/, "Elétrica"],
+    [/radiador|arrefec|mangueira/, "Radiador"],
+    [/pneu/, "Pneus"],
+    [/suspens|amortec/, "Suspensão"],
+    [/lavagem|lavador|higien/, "Higienização"],
+    [/combust|gasolina|etanol|diesel/, "Combustível"],
+    [/comiss/, "Comissão"],
+    [/anuncio|facebook|instagram|google/, "Anúncios"],
+    [/acessor|emblema|friso|som|multimidia|mapa/, "Acessórios"],
+    [/peca|lanterna|farol|lente|suporte|capa|olho de gato/, "Peças"]
+  ];
+  return rules.find(([pattern]) => pattern.test(text))?.[1] || "Outros";
+}
+
+function parseBulkCosts(value) {
+  let purchase = null;
+  let skipped = 0;
+  const items = [];
+  String(value).split(/\r?\n/).map(line => line.trim()).filter(Boolean).forEach(line => {
+    const match = line.match(/(?:R\$\s*)?(-?\d[\d.]*?(?:,\d{1,2})?)\s*$/i);
+    if (!match) { skipped += 1; return; }
+    const amount = parseBRMoney(match[1]);
+    const description = line.slice(0, match.index).replace(/[\s\t:;|-]+$/g, "").trim();
+    if (amount === null || !description) { skipped += 1; return; }
+    const key = normalizedText(description);
+    if (/^(compra|preco de compra|valor de compra|aquisicao)$/.test(key)) { purchase = amount; return; }
+    const category = inferCostCategory(description);
+    const explicitValue = /R\$/i.test(line) || /[,.]\d{1,2}\s*$/.test(line) || /\t|\s{2,}/.test(line);
+    if (!explicitValue && category === "Outros") { skipped += 1; return; }
+    items.push({ category, description: description.charAt(0).toUpperCase() + description.slice(1), amount, date: "", note: "" });
+  });
+  return { items, purchase, skipped };
+}
+
 function renderCostRows() {
   $("#cost-list").innerHTML = costItems.map((item, index) => `<div class="cost-row" data-cost-index="${index}">
     <label>Categoria<input data-cost-field="category" list="cost-category-options" value="${escapeHTML(item.category || "")}" placeholder="Ex: Mecânica"></label>
@@ -325,6 +377,7 @@ function openForm(vehicle = null, tab = "essential") {
   renderExistingImages();
   updateMetricsPreview(vehicle || {});
   message("#vehicle-message");
+  message("#bulk-cost-message");
   switchFormTab(tab);
   $("#vehicle-form-modal").showModal();
 }
@@ -451,6 +504,17 @@ $("#admin-images").addEventListener("change", event => {
   renderExistingImages();
 });
 $("#add-cost-item").addEventListener("click", () => { costItems.push({ category: "", description: "", amount: null, date: today(), note: "" }); renderCostRows(); });
+$("#import-costs").addEventListener("click", () => {
+  const parsed = parseBulkCosts($("#bulk-costs").value);
+  if (!parsed.items.length && parsed.purchase === null) { message("#bulk-cost-message", "Nenhuma linha com descrição e valor foi reconhecida."); return; }
+  if ($("#bulk-cost-mode").value === "replace") costItems = parsed.items;
+  else costItems.push(...parsed.items);
+  if (parsed.purchase !== null) $("#admin-purchase-price").value = parsed.purchase;
+  renderCostRows();
+  const purchaseText = parsed.purchase !== null ? " e preço de compra preenchido" : "";
+  const skippedText = parsed.skipped ? ` ${parsed.skipped} linha(s) não reconhecida(s).` : "";
+  message("#bulk-cost-message", `${parsed.items.length} custo(s) importado(s)${purchaseText}.${skippedText}`);
+});
 $("#cost-list").addEventListener("input", event => {
   const row = event.target.closest("[data-cost-index]");
   if (!row || !event.target.dataset.costField) return;

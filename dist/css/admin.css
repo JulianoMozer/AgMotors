@@ -60,6 +60,10 @@
 .cost-toolbar strong,.cost-toolbar span{display:block}
 .cost-toolbar span{margin-top:3px;color:var(--muted);font-size:.75rem}
 .cost-list{display:grid;gap:10px}
+.bulk-cost-import{margin:4px 0 18px;padding:16px;border:1px solid var(--line);border-radius:8px;background:#f9fafb}
+.bulk-cost-import label{margin:0}.bulk-cost-import textarea{min-height:122px;background:#fff;font:inherit;line-height:1.55;resize:vertical}
+.bulk-cost-import>div{display:flex;justify-content:flex-end;gap:10px;margin-top:10px}.bulk-cost-import select{min-width:210px;height:42px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:0 10px}
+.bulk-cost-import p{min-height:18px;margin-top:8px;color:var(--muted);font-size:.72rem;font-weight:700}
 .cost-row{display:grid;grid-template-columns:1fr 1.1fr .7fr .8fr 1fr auto;gap:10px;align-items:end;padding:12px;border:1px solid var(--line);border-radius:10px;background:#f9fafb}
 .metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
 .metrics-grid article{border:1px solid var(--line);border-radius:10px;padding:16px;background:#f9fafb}
@@ -67,7 +71,7 @@
 .metrics-grid span{color:var(--muted);font-size:.7rem;font-weight:800}
 .metrics-grid strong{margin-top:4px;color:var(--navy);font-size:1.25rem}
 @media(max-width:900px){.dashboard-cards,.management-strip,.metrics-grid{grid-template-columns:repeat(2,1fr)}.cost-row{grid-template-columns:1fr 1fr}}
-@media(max-width:560px){.dashboard-cards,.management-strip,.metrics-grid,.cost-row{grid-template-columns:1fr}.form-tabs{margin:-20px -16px 18px;padding:12px 16px}.cost-toolbar{align-items:stretch;flex-direction:column}.cost-toolbar .filter-clear{width:100%}}
+@media(max-width:560px){.dashboard-cards,.management-strip,.metrics-grid,.cost-row{grid-template-columns:1fr}.form-tabs{margin:-20px -16px 18px;padding:12px 16px}.cost-toolbar{align-items:stretch;flex-direction:column}.cost-toolbar .filter-clear{width:100%}.bulk-cost-import>div{align-items:stretch;flex-direction:column}.bulk-cost-import select,.bulk-cost-import .button{width:100%}}
 
 /* Visão gerencial, despesas e documentos */
 .insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:30px}
