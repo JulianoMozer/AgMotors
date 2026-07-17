@@ -338,7 +338,7 @@ function vehicleAdData() {
     year: $("#admin-year").value, modelYear: $("#admin-model-year").value,
     price: Number($("#admin-price").value) || 0, mileage: Number($("#admin-mileage").value) || 0,
     transmission: $("#admin-transmission").value.trim(), fuel: $("#admin-fuel").value.trim(),
-    color: $("#admin-color").value.trim(),
+    color: $("#admin-color").value.trim(), chassis: $("#admin-chassis").value.trim(),
     features: $("#admin-features").value.split("\n").map(value => value.trim()).filter(Boolean)
   };
 }
@@ -374,9 +374,33 @@ function buildAdPrompt(data, style) {
     `Veículo: ${vehicleAdName(data)}`, vehicleAdYear(data) && `Ano/modelo: ${vehicleAdYear(data)}`,
     data.mileage && `Quilometragem: ${numberFormat(data.mileage)} km`, data.transmission && `Câmbio: ${data.transmission}`,
     data.fuel && `Combustível: ${data.fuel}`, data.color && `Cor: ${data.color}`,
-    data.price && `Preço: ${money.format(data.price)}`, data.features.length && `Opcionais: ${data.features.join(", ")}`
+    data.price && `Preço: ${money.format(data.price)}`, data.chassis && `Chassi para referência técnica: ${data.chassis}`,
+    data.features.length && `Opcionais já confirmados: ${data.features.join(", ")}`
   ].filter(Boolean).join("\n");
-  return `Crie uma descrição em português brasileiro para o anúncio abaixo.\n\n${styleInstructions[style] || styleInstructions.objective}\nUse somente os dados fornecidos. Não invente estado de conservação, revisões, procedência, garantia, opcionais ou qualquer informação ausente. Não use emojis. Entregue somente o texto final do anúncio, pronto para colar no site.\n\nDADOS DO VEÍCULO\n${facts}\n\nLoja: AG Motors Curitiba\nContato: (41) 99615-5327`;
+  return `Prepare o conteúdo em português brasileiro para o anúncio abaixo.\n\n${styleInstructions[style] || styleInstructions.objective}\nNão faça perguntas e não peça chassi, placa ou outros dados. Se o chassi estiver informado, use-o apenas como referência técnica para identificar a versão e os equipamentos; nunca mostre o chassi na resposta. Não invente estado de conservação, revisões, procedência ou garantia. Não use emojis, marcadores, numeração, introdução ou explicações.\n\nResponda obrigatoriamente neste formato exato:\n\nDESCRIÇÃO:\nDois parágrafos curtos de texto comercial. Não coloque lista de equipamentos, ficha técnica, preço, telefone ou dados da loja nesta parte.\n\nOPCIONAIS:\nUm equipamento por linha, sem traços ou marcadores. Não misture ano, quilometragem, combustível, cor, preço, loja ou contato. Liste somente equipamentos compatíveis com os dados fornecidos; quando não puder confirmar, não inclua.\n\nDADOS DO VEÍCULO\n${facts}\n\nLoja: AG Motors Curitiba\nContato: (41) 99615-5327`;
+}
+
+function parseAdResponse(value) {
+  const lines = String(value || "").replace(/\r/g, "").split("\n");
+  const heading = line => normalizedText(line.replace(/[*#:_]/g, " ").replace(/\s+/g, " "));
+  const descriptionIndex = lines.findIndex(line => heading(line) === "descricao");
+  const optionsIndex = lines.findIndex(line => ["opcionais", "equipamentos", "principais equipamentos"].includes(heading(line)));
+  const stopHeadings = new Set(["informacoes", "informacao", "valor", "preco", "ag motors curitiba", "mais informacoes", "contato"]);
+  const descriptionStart = descriptionIndex >= 0 ? descriptionIndex + 1 : 0;
+  const descriptionEnd = optionsIndex >= 0 ? optionsIndex : lines.length;
+  let descriptionLines = lines.slice(descriptionStart, descriptionEnd).map(line => line.trim()).filter(Boolean);
+  if (descriptionIndex < 0 && descriptionLines.length > 1) {
+    const vehicleName = normalizedText(vehicleAdName(vehicleAdData()));
+    if (vehicleName && normalizedText(descriptionLines[0]).includes(vehicleName)) descriptionLines = descriptionLines.slice(1);
+  }
+  const options = [];
+  for (const line of optionsIndex >= 0 ? lines.slice(optionsIndex + 1) : []) {
+    const clean = line.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, "").trim();
+    if (!clean) continue;
+    if (stopHeadings.has(heading(clean))) break;
+    options.push(clean);
+  }
+  return { description: descriptionLines.join("\n\n"), options: [...new Set(options)] };
 }
 
 async function copyText(value, area = $("#ad-prompt-preview")) {
@@ -1023,11 +1047,20 @@ $("#generate-base-description").addEventListener("click", () => {
     saveVehicleDraft();
   } catch (error) { message("#ad-assistant-message", error.message); }
 });
+$("#apply-ad-response").addEventListener("click", () => {
+  const parsed = parseAdResponse($("#ad-response").value);
+  if (!parsed.description && !parsed.options.length) { message("#ad-assistant-message", "Não encontrei os blocos DESCRIÇÃO e OPCIONAIS na resposta."); return; }
+  if (($("#admin-description").value.trim() || $("#admin-features").value.trim()) && !window.confirm("Substituir a descrição e os opcionais atuais?")) return;
+  if (parsed.description) $("#admin-description").value = parsed.description;
+  if (parsed.options.length) $("#admin-features").value = parsed.options.join("\n");
+  message("#ad-assistant-message", `Resposta aplicada: descrição${parsed.options.length ? ` e ${parsed.options.length} opcionais` : ""}.`);
+  saveVehicleDraft();
+});
 $("#copy-ad-prompt").addEventListener("click", async () => {
   try {
     const prompt = buildAdPrompt(vehicleAdData(), currentAdStyle());
     await copyText(prompt); saveVehicleDraft();
-    message("#ad-assistant-message", "Prompt copiado. Ele também ficou visível abaixo para conferência.");
+    message("#ad-assistant-message", "Prompt copiado. Depois cole a resposta completa no campo abaixo.");
   } catch (error) { message("#ad-assistant-message", `${error.message || "Não foi possível copiar."} O prompt ficou visível abaixo para copiar manualmente.`); }
 });
 $("#open-chatgpt").addEventListener("click", async () => {

@@ -146,6 +146,8 @@
           <div class="ad-assistant-heading"><div><strong>Assistente do anúncio</strong><span>Use um texto-base ou leve os dados organizados para o GPT.</span></div><div class="ad-style" role="group" aria-label="Estilo do anúncio"><button class="active" type="button" data-ad-style="objective">Objetivo</button><button type="button" data-ad-style="complete">Completo</button><button type="button" data-ad-style="commercial">Comercial</button></div></div>
           <div class="ad-assistant-actions"><button class="button button-ghost" id="generate-base-description" type="button">Criar texto-base</button><button class="button button-primary" id="copy-ad-prompt" type="button">Copiar prompt para o GPT</button><button class="button button-ghost" id="open-chatgpt" type="button">Copiar e abrir ChatGPT</button></div>
           <label class="ad-prompt-preview" id="ad-prompt-preview-wrap" hidden>Prompt pronto<textarea id="ad-prompt-preview" rows="7" readonly></textarea></label>
+          <label class="ad-response-import">Resposta do GPT<textarea id="ad-response" rows="7" placeholder="Cole aqui a resposta completa do GPT."></textarea></label>
+          <button class="button button-primary ad-response-apply" id="apply-ad-response" type="button">Separar descrição e opcionais</button>
           <p id="ad-assistant-message" aria-live="polite"></p>
         </div>
         <label>Descrição do anúncio<textarea id="admin-description" rows="7" placeholder="Crie o texto-base ou cole aqui a descrição preparada pelo GPT."></textarea></label>
