@@ -267,6 +267,68 @@ function normalizedText(value = "") {
   return String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
+function currentAdStyle() {
+  return $("[data-ad-style].active")?.dataset.adStyle || "objective";
+}
+
+function vehicleAdData() {
+  return {
+    brand: $("#admin-brand").value.trim(), model: $("#admin-model").value.trim(),
+    year: $("#admin-year").value, modelYear: $("#admin-model-year").value,
+    price: Number($("#admin-price").value) || 0, mileage: Number($("#admin-mileage").value) || 0,
+    transmission: $("#admin-transmission").value.trim(), fuel: $("#admin-fuel").value.trim(),
+    color: $("#admin-color").value.trim(),
+    features: $("#admin-features").value.split("\n").map(value => value.trim()).filter(Boolean)
+  };
+}
+
+function vehicleAdName(data) {
+  return [data.brand, data.model].filter(Boolean).join(" ");
+}
+
+function vehicleAdYear(data) {
+  if (!data.year && !data.modelYear) return "";
+  return data.year && data.modelYear && data.year !== data.modelYear ? `${data.year}/${data.modelYear}` : data.modelYear || data.year;
+}
+
+function buildBaseDescription(data, style) {
+  if (!vehicleAdName(data)) throw new Error("Preencha pelo menos a marca e o modelo.");
+  const name = vehicleAdName(data);
+  const details = [vehicleAdYear(data) && `ano/modelo ${vehicleAdYear(data)}`, data.mileage && `${numberFormat(data.mileage)} km`, data.transmission, data.fuel, data.color && `cor ${data.color}`].filter(Boolean);
+  const features = data.features.length ? `Opcionais e destaques: ${data.features.join(", ")}.` : "";
+  const price = data.price ? `Valor anunciado: ${money.format(data.price)}.` : "";
+  if (style === "complete") return [`${name}${details.length ? `, ${details.join(", ")}` : ""}.`, features, price, "Disponível na AG Motors Curitiba. Entre em contato para mais informações, condições de financiamento e agendamento de visita."].filter(Boolean).join("\n\n");
+  if (style === "commercial") return [`Conheça o ${name}${vehicleAdYear(data) ? ` ${vehicleAdYear(data)}` : ""}.`, details.slice(1).length ? `Configuração: ${details.slice(1).join(", ")}.` : "", features, price, "Fale com a AG Motors Curitiba e agende sua visita."].filter(Boolean).join("\n\n");
+  return [`${name}${details.length ? ` | ${details.join(" | ")}` : ""}`, features, price, "Disponível na AG Motors Curitiba. Consulte condições e agende sua visita."].filter(Boolean).join("\n");
+}
+
+function buildAdPrompt(data, style) {
+  if (!vehicleAdName(data)) throw new Error("Preencha pelo menos a marca e o modelo.");
+  const styleInstructions = {
+    objective: "Faça um anúncio objetivo e fácil de ler, adequado para Marketplace e WhatsApp.",
+    complete: "Faça uma descrição completa para o site da loja, organizada em parágrafos curtos.",
+    commercial: "Faça um anúncio comercial atraente, valorizando os diferenciais informados sem exageros."
+  };
+  const facts = [
+    `Veículo: ${vehicleAdName(data)}`, vehicleAdYear(data) && `Ano/modelo: ${vehicleAdYear(data)}`,
+    data.mileage && `Quilometragem: ${numberFormat(data.mileage)} km`, data.transmission && `Câmbio: ${data.transmission}`,
+    data.fuel && `Combustível: ${data.fuel}`, data.color && `Cor: ${data.color}`,
+    data.price && `Preço: ${money.format(data.price)}`, data.features.length && `Opcionais: ${data.features.join(", ")}`
+  ].filter(Boolean).join("\n");
+  return `Crie uma descrição em português brasileiro para o anúncio abaixo.\n\n${styleInstructions[style] || styleInstructions.objective}\nUse somente os dados fornecidos. Não invente estado de conservação, revisões, procedência, garantia, opcionais ou qualquer informação ausente. Não use emojis. Entregue somente o texto final do anúncio, pronto para colar no site.\n\nDADOS DO VEÍCULO\n${facts}\n\nLoja: AG Motors Curitiba\nContato: (41) 99615-5327`;
+}
+
+async function copyText(value) {
+  if (navigator.clipboard?.writeText) {
+    try { await navigator.clipboard.writeText(value); return; } catch {}
+  }
+  const area = document.createElement("textarea");
+  area.value = value; area.style.position = "fixed"; area.style.opacity = "0";
+  document.body.append(area); area.select();
+  const copied = document.execCommand("copy"); area.remove();
+  if (!copied) throw new Error("Não foi possível copiar o prompt.");
+}
+
 const pdfJsUrl = "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.149/build/pdf.min.mjs";
 const pdfWorkerUrl = "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.149/build/pdf.worker.min.mjs";
 const tesseractUrl = "https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.min.js";
@@ -528,6 +590,8 @@ function openForm(vehicle = null, tab = "essential") {
   message("#vehicle-message");
   message("#bulk-cost-message");
   message("#crlv-message");
+  message("#ad-assistant-message");
+  $$("[data-ad-style]").forEach(button => button.classList.toggle("active", button.dataset.adStyle === "objective"));
   switchFormTab(tab);
   $("#vehicle-form-modal").showModal();
 }
@@ -644,6 +708,23 @@ $("#admin-plate").addEventListener("input", event => { event.target.value = norm
 $("#admin-buyer-cpf").addEventListener("input", event => { event.target.value = formatCPF(event.target.value); });
 $("#admin-buyer-phone").addEventListener("input", event => { event.target.value = formatPhone(event.target.value); });
 $$('[data-document]').forEach(button => button.addEventListener("click", () => generateDocument(button.dataset.document)));
+$$("[data-ad-style]").forEach(button => button.addEventListener("click", () => {
+  $$("[data-ad-style]").forEach(item => item.classList.toggle("active", item === button));
+  message("#ad-assistant-message");
+}));
+$("#generate-base-description").addEventListener("click", () => {
+  try {
+    if ($("#admin-description").value.trim() && !window.confirm("Substituir a descrição atual pelo novo texto-base?")) return;
+    $("#admin-description").value = buildBaseDescription(vehicleAdData(), currentAdStyle());
+    message("#ad-assistant-message", "Texto-base criado. Revise e ajuste antes de publicar.");
+  } catch (error) { message("#ad-assistant-message", error.message); }
+});
+$("#copy-ad-prompt").addEventListener("click", async () => {
+  try {
+    await copyText(buildAdPrompt(vehicleAdData(), currentAdStyle()));
+    message("#ad-assistant-message", "Prompt copiado. Abra o ChatGPT, cole e depois traga a descrição pronta.");
+  } catch (error) { message("#ad-assistant-message", error.message || "Não foi possível copiar o prompt."); }
+});
 $("#add-buyer").addEventListener("click", () => switchFormTab("buyer"));
 $$('.admin-modal-close').forEach(button => button.addEventListener("click", () => $("#vehicle-form-modal").close()));
 $("#existing-images").insertAdjacentHTML("beforebegin", '<p class="photo-order-help">Arraste as fotos para organizar. A primeira imagem será a capa principal.</p>');

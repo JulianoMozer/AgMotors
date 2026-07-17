@@ -136,8 +136,13 @@
 
       <section class="form-panel" data-form-panel="details">
         <div class="admin-form-grid"><label>Câmbio<input id="admin-transmission" placeholder="Manual ou automático"></label><label>Combustível<input id="admin-fuel" placeholder="Flex, gasolina..."></label><label>Cor<input id="admin-color"></label><label>Código interno<input id="admin-internal-code" placeholder="Opcional"></label><label>Renavam<input id="admin-renavam" inputmode="numeric" placeholder="Opcional"></label><label>Chassi<input id="admin-chassis" maxlength="17" placeholder="Opcional"></label></div>
-        <label>Descrição<textarea id="admin-description" rows="3"></textarea></label>
         <label>Opcionais <small>Um por linha</small><textarea id="admin-features" rows="4"></textarea></label>
+        <div class="ad-assistant">
+          <div class="ad-assistant-heading"><div><strong>Assistente do anúncio</strong><span>Use um texto-base ou leve os dados organizados para o GPT.</span></div><div class="ad-style" role="group" aria-label="Estilo do anúncio"><button class="active" type="button" data-ad-style="objective">Objetivo</button><button type="button" data-ad-style="complete">Completo</button><button type="button" data-ad-style="commercial">Comercial</button></div></div>
+          <div class="ad-assistant-actions"><button class="button button-ghost" id="generate-base-description" type="button">Criar texto-base</button><button class="button button-primary" id="copy-ad-prompt" type="button">Copiar prompt para o GPT</button><a class="button button-ghost" href="https://chatgpt.com/" target="_blank" rel="noopener">Abrir ChatGPT</a></div>
+          <p id="ad-assistant-message" aria-live="polite"></p>
+        </div>
+        <label>Descrição do anúncio<textarea id="admin-description" rows="7" placeholder="Crie o texto-base ou cole aqui a descrição preparada pelo GPT."></textarea></label>
       </section>
 
       <section class="form-panel" data-form-panel="costs">
