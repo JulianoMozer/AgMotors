@@ -118,6 +118,7 @@
           <div><strong>Preencher pelo CRLV</strong><span>Documento avulso ou pasta completa do carro</span></div>
           <div class="crlv-actions"><label class="button button-ghost">Escolher CRLV<input id="crlv-file" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" hidden></label><label class="button button-primary">Escolher pasta<input id="vehicle-folder" type="file" webkitdirectory multiple hidden></label></div>
           <p id="crlv-message" aria-live="polite"></p>
+          <button class="filter-clear crlv-review-reopen" id="start-crlv-review" type="button" hidden>Revisar passo a passo</button>
         </div>
         <div class="admin-form-grid">
           <label>Placa <small>Recomendada para evitar duplicidade</small><input id="admin-plate" maxlength="8" placeholder="ABC1D23"></label>
@@ -205,6 +206,25 @@
       <p class="form-message" id="vehicle-message" role="alert"></p>
       <div class="form-actions"><button class="button button-ghost admin-modal-close" type="button">Fechar</button><button class="button button-primary" type="submit">Salvar veículo</button></div>
     </form>
+  </dialog>
+
+  <dialog class="vehicle-review-modal" id="vehicle-review-modal">
+    <header class="vehicle-review-header">
+      <div><span id="vehicle-review-counter">Passo 1</span><strong>Cadastro assistido</strong></div>
+      <button type="button" id="close-vehicle-review" aria-label="Fechar revisão">×</button>
+    </header>
+    <div class="vehicle-review-progress"><span id="vehicle-review-progress"></span></div>
+    <section class="vehicle-review-body">
+      <span class="vehicle-review-source" id="vehicle-review-source">CRLV reconhecido</span>
+      <h2 id="vehicle-review-question">Vamos conferir os dados?</h2>
+      <p id="vehicle-review-hint"></p>
+      <div class="vehicle-review-control" id="vehicle-review-control"></div>
+    </section>
+    <footer class="vehicle-review-actions">
+      <button class="button button-ghost" id="vehicle-review-back" type="button">Voltar</button>
+      <button class="filter-clear" id="vehicle-review-skip" type="button">Pular</button>
+      <button class="button button-primary" id="vehicle-review-next" type="button">OK, seguir</button>
+    </footer>
   </dialog>
 
   <dialog class="photo-guide-modal" id="photo-guide-modal">

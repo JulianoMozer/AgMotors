@@ -25,6 +25,7 @@ let draggedPhotoId = "";
 let costItems = [];
 let activeVehicle = null;
 let photoGuideIndex = 0;
+let vehicleReviewIndex = 0;
 let draftSaveTimer = 0;
 let draftAutoOpened = false;
 let sessionRefreshAttempted = false;
@@ -46,6 +47,17 @@ const photoGuideSteps = [
   { title: "Detalhe do motor", note: "Aproxime sem cortar os componentes principais.", kind: "detail", label: "Detalhe do motor" },
   { title: "Pneus e rodas", note: "Mostre a roda e a condição visível do pneu.", kind: "detail", label: "Pneu + roda" },
   { title: "Acessórios e diferenciais", note: "Fotografe teto solar, multimídia ou o principal diferencial deste carro.", kind: "detail", label: "Acessório principal" }
+];
+
+const vehicleReviewSteps = [
+  { selector: "#admin-brand", label: "Marca", question: value => value ? `A marca é ${value}?` : "Qual é a marca?", hint: "Confira o que veio do CRLV. Você pode corrigir antes de seguir.", required: true, placeholder: "Ex.: Peugeot" },
+  { selector: "#admin-model", label: "Modelo e versão", question: value => value ? `O modelo e a versão são ${value}?` : "Qual é o modelo e a versão?", hint: "Complete a versão quando souber, por exemplo: 508 THP 1.6 Turbo ou Cruze LTZ.", required: true, placeholder: "Ex.: 508 THP 1.6 Turbo" },
+  { selector: "#admin-model-year", label: "Ano do modelo", question: value => value ? `O ano do modelo é ${value}?` : "Qual é o ano do modelo?", hint: "Este é o ano usado para anunciar o veículo.", required: true, type: "number", min: 1900, max: 2100, placeholder: "Ex.: 2013" },
+  { selector: "#admin-color", label: "Cor", question: value => value ? `A cor é ${value}?` : "Qual é a cor?", hint: "Use a cor predominante indicada no documento.", optional: true, placeholder: "Ex.: Branca" },
+  { selector: "#admin-fuel", label: "Combustível", question: value => value ? `O combustível é ${value}?` : "Qual é o combustível?", hint: "Escolha uma opção ou escreva como prefere mostrar no anúncio.", optional: true, placeholder: "Ex.: Gasolina", choices: ["Flex", "Gasolina", "Diesel", "Etanol", "Elétrico", "Híbrido"] },
+  { selector: "#admin-transmission", label: "Câmbio", question: value => value ? `O câmbio é ${value}?` : "Qual é o câmbio?", hint: "O CRLV normalmente não informa o câmbio. Se não souber agora, pode pular.", optional: true, placeholder: "Manual ou automático", choices: ["Automático", "Manual", "CVT", "Automatizado"] },
+  { selector: "#admin-mileage", label: "Quilometragem", question: value => value ? `A quilometragem é ${numberFormat(value)} km?` : "Qual é a quilometragem atual?", hint: "Digite somente os números do painel. Você também pode adicionar mais tarde.", optional: true, type: "number", min: 0, step: 1, placeholder: "Ex.: 192000" },
+  { selector: "#admin-price", label: "Preço anunciado (R$)", question: value => value ? `O preço anunciado é ${money.format(Number(value))}?` : "Qual será o preço anunciado?", hint: "Se ainda estiver decidindo, pule e complete antes de publicar.", optional: true, type: "number", min: 0, step: 0.01, placeholder: "Ex.: 99900" }
 ];
 
 const escapeHTML = (value = "") => String(value).replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
@@ -349,7 +361,7 @@ function vehicleAdName(data) {
 
 function vehicleAdYear(data) {
   if (!data.year && !data.modelYear) return "";
-  return data.year && data.modelYear && data.year !== data.modelYear ? `${data.year}/${data.modelYear}` : data.modelYear || data.year;
+  return data.modelYear || data.year;
 }
 
 function buildBaseDescription(data, style) {
@@ -372,7 +384,7 @@ function buildAdPrompt(data, style) {
   };
   const vehicleIdentification = vehicleAdName(data).replace(/^(?:I|IMP|N)\s*\/\s*/i, "").trim();
   const facts = [
-    `Marca/modelo/versão conforme o CRLV: ${vehicleIdentification}`, vehicleAdYear(data) && `Ano/modelo: ${vehicleAdYear(data)}`,
+    `Marca/modelo/versão conforme o CRLV: ${vehicleIdentification}`, vehicleAdYear(data) && `Ano do modelo: ${vehicleAdYear(data)}`,
     data.mileage && `Quilometragem: ${numberFormat(data.mileage)} km`, data.transmission && `Câmbio: ${data.transmission}`,
     data.fuel && `Combustível: ${data.fuel}`, data.color && `Cor: ${data.color}`,
     data.price && `Preço: ${money.format(data.price)}`, data.chassis && `Chassi para identificar versão e equipamentos: ${data.chassis.toUpperCase()}`,
@@ -704,6 +716,87 @@ async function processCrlvFile(file) {
   return { filled, data, missing };
 }
 
+function currentVehicleReviewStep() {
+  return vehicleReviewSteps[vehicleReviewIndex];
+}
+
+function renderVehicleReview() {
+  const step = currentVehicleReviewStep();
+  const field = $(step.selector);
+  const value = field.value.trim();
+  const total = vehicleReviewSteps.length;
+  $("#vehicle-review-counter").textContent = `Passo ${vehicleReviewIndex + 1} de ${total}`;
+  $("#vehicle-review-progress").style.width = `${((vehicleReviewIndex + 1) / total) * 100}%`;
+  $("#vehicle-review-question").textContent = step.question(value);
+  $("#vehicle-review-hint").textContent = step.hint;
+  $("#vehicle-review-source").textContent = $("#admin-plate").value.trim()
+    ? `CRLV reconhecido - placa ${$("#admin-plate").value.trim().toUpperCase()}`
+    : "CRLV reconhecido";
+  const attributes = [
+    `type="${step.type || "text"}"`, `value="${escapeHTML(value)}"`, `placeholder="${escapeHTML(step.placeholder || "")}"`,
+    step.min !== undefined ? `min="${step.min}"` : "", step.max !== undefined ? `max="${step.max}"` : "", step.step !== undefined ? `step="${step.step}"` : ""
+  ].filter(Boolean).join(" ");
+  const choices = step.choices?.length ? `<div class="vehicle-review-choices" role="group" aria-label="Opções de ${escapeHTML(step.label)}">${step.choices.map(choice => `<button type="button" class="${normalizedText(choice) === normalizedText(value) ? "active" : ""}" data-review-choice="${escapeHTML(choice)}">${escapeHTML(choice)}</button>`).join("")}</div>` : "";
+  $("#vehicle-review-control").innerHTML = `<label>${escapeHTML(step.label)}<input id="vehicle-review-input" ${attributes}></label>${choices}`;
+  const input = $("#vehicle-review-input");
+  input.addEventListener("input", () => {
+    field.value = input.value;
+    field.closest("label")?.classList.remove("field-needs-confirmation");
+    $("#vehicle-review-question").textContent = step.question(input.value.trim());
+    $("#vehicle-review-skip").hidden = !step.optional || Boolean(input.value.trim());
+    scheduleVehicleDraft();
+  });
+  $$('[data-review-choice]', $("#vehicle-review-control")).forEach(button => button.addEventListener("click", () => {
+    input.value = button.dataset.reviewChoice;
+    field.value = input.value;
+    field.closest("label")?.classList.remove("field-needs-confirmation");
+    saveVehicleDraft();
+    advanceVehicleReview();
+  }));
+  $("#vehicle-review-back").disabled = vehicleReviewIndex === 0;
+  $("#vehicle-review-skip").hidden = !step.optional || Boolean(value);
+  $("#vehicle-review-next").textContent = vehicleReviewIndex === total - 1 ? "Concluir revisão" : "OK, seguir";
+  requestAnimationFrame(() => input.focus({ preventScroll: true }));
+}
+
+function commitVehicleReviewStep(allowEmpty = false) {
+  const step = currentVehicleReviewStep();
+  const input = $("#vehicle-review-input");
+  const value = input?.value.trim() || "";
+  if (!value && step.required && !allowEmpty) {
+    $("#vehicle-review-hint").textContent = "Confira ou preencha este dado para continuar.";
+    input?.focus();
+    return false;
+  }
+  $(step.selector).value = value;
+  $(step.selector).closest("label")?.classList.toggle("field-needs-confirmation", !value && step.optional);
+  saveVehicleDraft();
+  return true;
+}
+
+function finishVehicleReview() {
+  markMissingAdFields();
+  saveVehicleDraft();
+  $("#vehicle-review-modal").close();
+  message("#crlv-message", "Dados do documento revisados. Continue com preço, fotos e anúncio.");
+  toast("Revisão concluída. Os dados já estão na ficha.");
+}
+
+function advanceVehicleReview() {
+  if (!commitVehicleReviewStep()) return;
+  if (vehicleReviewIndex >= vehicleReviewSteps.length - 1) { finishVehicleReview(); return; }
+  vehicleReviewIndex += 1;
+  renderVehicleReview();
+}
+
+function openVehicleReview() {
+  vehicleReviewIndex = 0;
+  $("#start-crlv-review").hidden = false;
+  renderVehicleReview();
+  const modal = $("#vehicle-review-modal");
+  if (!modal.open) modal.showModal();
+}
+
 function addPhotoFiles(files) {
   const existing = new Set(photoItems.filter(item => item.type === "file").map(item => `${item.value.name}:${item.value.size}:${item.value.lastModified}`));
   let added = 0;
@@ -898,6 +991,7 @@ async function openForm(vehicle = null, tab = "essential") {
   costItems = [];
   $("#draft-status").textContent = "";
   $("#discard-vehicle-draft").hidden = true;
+  $("#start-crlv-review").hidden = true;
   $("#ad-prompt-preview-wrap").hidden = true;
   $("#form-title").textContent = vehicle ? "Editar veículo" : "Cadastrar veículo";
   $("#vehicle-id").value = vehicle?.id || "";
@@ -930,7 +1024,10 @@ async function openForm(vehicle = null, tab = "essential") {
     $("#admin-form-status").value = "available";
     $$("[data-ad-style]").forEach(button => button.classList.toggle("active", button.dataset.adStyle === "objective"));
     await restoreVehicleDraft();
-    if ($("#admin-renavam").value || $("#admin-chassis").value) markMissingAdFields();
+    if ($("#admin-renavam").value || $("#admin-chassis").value) {
+      markMissingAdFields();
+      $("#start-crlv-review").hidden = false;
+    }
   }
   renderCostRows();
   renderExistingImages();
@@ -1112,6 +1209,21 @@ $("#admin-images").addEventListener("change", event => {
   event.target.value = "";
 });
 $("#open-photo-guide").addEventListener("click", openPhotoGuide);
+$("#start-crlv-review").addEventListener("click", openVehicleReview);
+$("#close-vehicle-review").addEventListener("click", () => $("#vehicle-review-modal").close());
+$("#vehicle-review-next").addEventListener("click", advanceVehicleReview);
+$("#vehicle-review-back").addEventListener("click", () => {
+  commitVehicleReviewStep(true);
+  if (vehicleReviewIndex > 0) { vehicleReviewIndex -= 1; renderVehicleReview(); }
+});
+$("#vehicle-review-skip").addEventListener("click", () => {
+  const step = currentVehicleReviewStep();
+  if (!step.optional) return;
+  $("#vehicle-review-input").value = "";
+  $(step.selector).value = "";
+  if (vehicleReviewIndex >= vehicleReviewSteps.length - 1) finishVehicleReview();
+  else { vehicleReviewIndex += 1; renderVehicleReview(); }
+});
 $("#close-photo-guide").addEventListener("click", () => $("#photo-guide-modal").close());
 $("#photo-guide-back").addEventListener("click", () => { if (photoGuideIndex > 0) { photoGuideIndex -= 1; renderPhotoGuide(); } });
 $("#photo-guide-skip").addEventListener("click", advancePhotoGuide);
@@ -1133,6 +1245,7 @@ $("#crlv-file").addEventListener("change", async event => {
     const result = await processCrlvFile(file);
     const missing = result.missing.length ? ` Confirme agora: ${result.missing.join(", ")}.` : "";
     message("#crlv-message", `${result.filled} campo(s) preenchido(s).${missing}`);
+    openVehicleReview();
   } catch (error) {
     message("#crlv-message", error.message || "Não foi possível ler este documento.");
   } finally {
@@ -1153,6 +1266,7 @@ $("#vehicle-folder").addEventListener("change", async event => {
     if (result?.missing.length) parts.push(`confirme ${result.missing.join(", ")}`);
     if (videoCount) parts.push(`${videoCount} vídeo(s) mantido(s) somente na pasta`);
     message("#crlv-message", `${parts.join(" · ")}. Confira antes de salvar.`);
+    if (result) openVehicleReview();
   } catch (error) {
     message("#crlv-message", `${error.message || "Não foi possível ler o documento."} ${addedPhotos} foto(s) adicionada(s).`);
   } finally {
