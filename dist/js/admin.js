@@ -539,6 +539,28 @@ function textValueNearLabel(lines, labelPattern) {
   return "";
 }
 
+function cleanCrlvVehicleName(value) {
+  const sideColumn = /\s+(?:ASSINADO DIGITALMENTE|DADOS DO SEGURO DPVAT|INFORMACOES DO SEGURO DPVAT|CAT\.\s*TARIF|DATA DE QUITACAO|PAGAMENTO)\b.*$/;
+  const clean = String(value || "")
+    .replace(/^MARCA\s*\/?\s*MODELO(?:\s*\/?\s*VERSAO)?\s*/, "")
+    .replace(sideColumn, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (/^(?:ASSINADO DIGITALMENTE|DADOS DO SEGURO DPVAT|INFORMACOES DO SEGURO DPVAT)\b/.test(clean)) return "";
+  return clean;
+}
+
+function vehicleNameNearLabel(lines) {
+  const labelPattern = /MARCA\s*\/?\s*MODELO(?:\s*\/?\s*VERSAO)?/;
+  const index = lines.findIndex(line => labelPattern.test(line));
+  if (index < 0) return "";
+  const candidates = [lines[index].replace(labelPattern, ""), ...lines.slice(index + 1, index + 6)]
+    .map(cleanCrlvVehicleName)
+    .filter(Boolean);
+  const vehiclePattern = /^(?:(?:I|IMP|N)\s*\/\s*)?[A-Z0-9.\-]+(?:\s*\/\s*|\s+)[A-Z0-9]/;
+  return candidates.find(candidate => vehiclePattern.test(candidate)) || candidates[0] || "";
+}
+
 function nearbyDocumentText(lines, labelPattern, lookAhead = 4) {
   const index = lines.findIndex(line => labelPattern.test(line));
   return index < 0 ? "" : lines.slice(index, index + lookAhead + 1).join(" ");
@@ -584,7 +606,7 @@ function parseCrlvText(value) {
   const plate = valueNearLabel(lines, /\bPLACA\b/, /\b([A-Z]{3}[0-9][A-Z0-9][0-9]{2})\b/) || compact.match(/\b([A-Z]{3}[0-9][A-Z0-9][0-9]{2})\b/)?.[1] || "";
   const renavam = valueNearLabel(lines, /RENAVAM/, /\b(\d{9,11})\b/, 6) || "";
   const chassis = valueNearLabel(lines, /CHASSI/, /\b([A-HJ-NPR-Z0-9]{17})\b/, 6) || compact.match(/\b([A-HJ-NPR-Z0-9]{17})\b/)?.[1] || "";
-  let vehicleName = textValueNearLabel(lines, /MARCA\s*\/?\s*MODELO(?:\s*\/?\s*VERSAO)?/);
+  let vehicleName = vehicleNameNearLabel(lines);
   if (/^(19|20)\d{2}\b/.test(vehicleName)) vehicleName = "";
   vehicleName = vehicleName.replace(/\s+(?:19|20)\d{2}\s+(?:19|20)\d{2}(?:\s.*)?$/, "").trim();
   const name = splitVehicleName(vehicleName);
