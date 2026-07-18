@@ -370,14 +370,18 @@ function buildAdPrompt(data, style) {
     complete: "Faça uma descrição completa para o site da loja, organizada em parágrafos curtos.",
     commercial: "Faça um anúncio comercial atraente, valorizando os diferenciais informados sem exageros."
   };
+  const vehicleIdentification = vehicleAdName(data).replace(/^(?:I|IMP|N)\s*\/\s*/i, "").trim();
   const facts = [
-    `Veículo: ${vehicleAdName(data)}`, vehicleAdYear(data) && `Ano/modelo: ${vehicleAdYear(data)}`,
+    `Marca/modelo/versão conforme o CRLV: ${vehicleIdentification}`, vehicleAdYear(data) && `Ano/modelo: ${vehicleAdYear(data)}`,
     data.mileage && `Quilometragem: ${numberFormat(data.mileage)} km`, data.transmission && `Câmbio: ${data.transmission}`,
     data.fuel && `Combustível: ${data.fuel}`, data.color && `Cor: ${data.color}`,
-    data.price && `Preço: ${money.format(data.price)}`, data.chassis && `Chassi para referência técnica: ${data.chassis}`,
+    data.price && `Preço: ${money.format(data.price)}`, data.chassis && `Chassi para identificar versão e equipamentos: ${data.chassis.toUpperCase()}`,
     data.features.length && `Opcionais já confirmados: ${data.features.join(", ")}`
   ].filter(Boolean).join("\n");
-  return `Prepare o conteúdo em português brasileiro para o anúncio abaixo.\n\n${styleInstructions[style] || styleInstructions.objective}\nNão faça perguntas e não peça chassi, placa ou outros dados. Se o chassi estiver informado, use-o apenas como referência técnica para identificar a versão e os equipamentos; nunca mostre o chassi na resposta. Não invente estado de conservação, revisões, procedência ou garantia. Não use emojis, marcadores, numeração, introdução ou explicações.\n\nResponda obrigatoriamente neste formato exato:\n\nDESCRIÇÃO:\nDois parágrafos curtos de texto comercial. Não coloque lista de equipamentos, ficha técnica, preço, telefone ou dados da loja nesta parte.\n\nOPCIONAIS:\nUm equipamento por linha, sem traços ou marcadores. Não misture ano, quilometragem, combustível, cor, preço, loja ou contato. Liste somente equipamentos compatíveis com os dados fornecidos; quando não puder confirmar, não inclua.\n\nDADOS DO VEÍCULO\n${facts}\n\nLoja: AG Motors Curitiba\nContato: (41) 99615-5327`;
+  const chassisInstruction = data.chassis
+    ? "Use o chassi fornecido junto com a identificação completa do CRLV para apurar a versão e os equipamentos originais. Nunca mostre o chassi na resposta."
+    : "O chassi não foi informado. Prossiga com a identificação completa do CRLV sem fazer perguntas.";
+  return `Prepare o conteúdo em português brasileiro para o anúncio abaixo.\n\n${styleInstructions[style] || styleInstructions.objective}\n${chassisInstruction}\nConsidere com atenção a versão que aparece depois do modelo, pois ela diferencia configurações como LT, LTZ, THP e outras. Não peça placa ou dados adicionais. Não invente estado de conservação, revisões, procedência ou garantia. Não use emojis, marcadores, numeração, introdução ou explicações.\n\nResponda obrigatoriamente neste formato exato:\n\nDESCRIÇÃO:\nDois parágrafos curtos de texto comercial. Não coloque lista de equipamentos, ficha técnica, preço, telefone ou dados da loja nesta parte.\n\nOPCIONAIS:\nUm equipamento por linha, sem traços ou marcadores. Não misture ano, quilometragem, combustível, cor, preço, loja ou contato. Liste somente equipamentos compatíveis com a marca, o modelo, a versão, o ano e o chassi fornecidos. Quando não puder confirmar um equipamento, não inclua.\n\nDADOS DO VEÍCULO\n${facts}\n\nLoja: AG Motors Curitiba\nContato: (41) 99615-5327`;
 }
 
 function parseAdResponse(value) {
@@ -562,7 +566,7 @@ function recognizedTransmission(value) {
 }
 
 function splitVehicleName(value) {
-  let clean = String(value || "").replace(/^(I|N)\//, "").replace(/\s+/g, " ").trim();
+  let clean = String(value || "").replace(/^(?:I|IMP|N)\s*\/\s*/i, "").replace(/\s+/g, " ").trim();
   if (!clean) return { brand: "", model: "" };
   const slash = clean.indexOf("/");
   const normalizeBrandName = brand => /^(MERCEDES(?:-|\s*)BENZ|M\.BENZ)$/i.test(brand) ? "Mercedes-Benz" : brand;
